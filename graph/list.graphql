@@ -6,6 +6,11 @@ type List {
     board_id: ID!
 }
 
+input NewList {
+    name: String!
+    board_id: ID!
+}
+
 type ListOps {
-    create(name: String!): String! @goField(forceResolver: true)
+    create(input: NewList!): List! @goField(forceResolver: true)
 }

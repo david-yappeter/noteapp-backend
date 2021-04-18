@@ -7,5 +7,5 @@ type Team {
 }
 
 type TeamOps {
-    create(name: String!): Team! @goField(forceResolver: true) @goField(forceResolver: true)
+    create(name: String!): Team! @goField(forceResolver: true) @goField(forceResolver: true) @isLogin
 }

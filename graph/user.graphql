@@ -5,6 +5,7 @@ type User {
     created_at: Time!
     updated_at: Time
     avatar: String
+    teams: [Team!]! @goField(forceResolver: true)
 }
 
 input NewUser {

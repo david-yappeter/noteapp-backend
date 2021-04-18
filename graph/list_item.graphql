@@ -1,0 +1,19 @@
+type ListItem {
+    id: ID!
+    name: String!
+    created_at: Time!
+    updated_at: Time
+    list_id: ID!
+    next: ID
+    prev: ID
+}
+
+input NewListItem {
+    name: String!
+    list_id: ID!
+    prev: ID
+}
+
+type ListItemOps {
+    create(input: NewListItem!): ListItem! @goField(forceResolver: true) @isLogin
+}

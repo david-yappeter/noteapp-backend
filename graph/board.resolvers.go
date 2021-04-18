@@ -5,13 +5,13 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"myapp/graph/generated"
 	"myapp/graph/model"
+	"myapp/service"
 )
 
-func (r *boardOpsResolver) Create(ctx context.Context, obj *model.BoardOps, name string) (*model.Board, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *boardOpsResolver) Create(ctx context.Context, obj *model.BoardOps, input model.NewBoard) (*model.Board, error) {
+	return service.BoardCreate(ctx, input)
 }
 
 // BoardOps returns generated.BoardOpsResolver implementation.

@@ -5,13 +5,13 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"myapp/graph/generated"
 	"myapp/graph/model"
+	"myapp/service"
 )
 
 func (r *teamOpsResolver) Create(ctx context.Context, obj *model.TeamOps, name string) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented"))
+	return service.TeamCreate(ctx, name)
 }
 
 // TeamOps returns generated.TeamOpsResolver implementation.

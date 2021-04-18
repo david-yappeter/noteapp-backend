@@ -5,13 +5,13 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"myapp/graph/generated"
 	"myapp/graph/model"
+	"myapp/service"
 )
 
-func (r *listOpsResolver) Create(ctx context.Context, obj *model.ListOps, name string) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *listOpsResolver) Create(ctx context.Context, obj *model.ListOps, input model.NewList) (*model.List, error) {
+	return service.ListCreate(ctx, input)
 }
 
 // ListOps returns generated.ListOpsResolver implementation.

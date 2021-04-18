@@ -6,6 +6,11 @@ type Board {
     team_id: ID!
 }
 
+input NewBoard {
+    name: String!
+    team_id: ID!
+}
+
 type BoardOps {
-    create(name: String!): Board! @goField(forceResolver: true) @isLogin
+    create(input: NewBoard!): Board! @goField(forceResolver: true) @isLogin
 }

@@ -6,9 +6,12 @@ import (
 	"myapp/config"
 	"myapp/graph/model"
 	"myapp/tools"
+	"strings"
 	"time"
 
+	"github.com/badoux/checkmail"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"gorm.io/gorm"
 )
 
 //UserCreate Create
@@ -19,7 +22,7 @@ func UserCreate(ctx context.Context, input model.NewUser) (*model.User, error) {
 
 	user := model.User{
 		Name:      input.Name,
-		Email:     input.Email,
+		Email:     strings.ToLower(input.Email),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: nil,
 		Avatar:    nil,
@@ -154,4 +157,102 @@ func UserGetByToken(ctx context.Context) (*model.User, error) {
 	}
 
 	return UserGetByID(ctx, tokenUser.ID)
+}
+
+//UserGetByEmail Get By Email
+func UserGetByEmail(ctx context.Context, email string) (*model.User, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var user model.User
+
+	if err := db.Table("user").Where("lower(email) = ?", strings.ToLower(email)).Take(&user).Error; err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func UserLogin(ctx context.Context, email string, password string) (*model.JwtToken, error) {
+	if strings.EqualFold(email, "") {
+		return nil, gqlError("Empty Email", "code", "EMPTY_EMAIL")
+	}
+	if strings.EqualFold(password, "") {
+		return nil, gqlError("Empty Password", "code", "EMPTY_PASSWORD")
+	}
+
+	if err := checkmail.ValidateFormat(email); err != nil {
+		fmt.Println(err)
+		return nil, gqlError("Invalid Email", "code", "INVALID_EMAIL_FORMAT")
+	}
+
+	getUser, err := UserGetByEmail(ctx, email)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, gqlError("Email Not Found", "code", "EMAIL_NOT_FOUND")
+		}
+		return nil, err
+	}
+
+	if !tools.PasswordCompare(getUser.Password, password) {
+		return nil, gqlError("Wrong Password!", "code", "WRONG_PASSWORD")
+	}
+
+	token, err := JwtTokenCreate(ctx, getUser.ID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &model.JwtToken{
+		Type:  "Bearer",
+		Token: token,
+	}, nil
+}
+
+func UserRegister(ctx context.Context, input model.NewUser) (*model.JwtToken, error) {
+	if strings.EqualFold(input.Email, "") {
+		return nil, gqlError("Empty Email", "code", "EMPTY_EMAIL")
+	}
+	if strings.EqualFold(input.Password, "") {
+		return nil, gqlError("Empty Password", "code", "EMPTY_PASSWORD")
+	}
+
+	if err := checkmail.ValidateFormat(input.Email); err != nil {
+		fmt.Println(err)
+		return nil, gqlError("Invalid Email", "code", "INVALID_EMAIL_FORMAT")
+	}
+
+	if input.Password != input.ConfirmPassword {
+		return nil, gqlError("Password And Confirm Password Not Match!", "code", "INVALID_PASSWORD_MATCH")
+	}
+
+	getUser, err := UserGetByEmail(ctx, input.Email)
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+	}
+
+	if getUser != nil {
+		return nil, gqlError("Email Already Exist", "code", "EMAIL_EXIST")
+	}
+
+	if getUser, err = UserCreate(ctx, input); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	token, err := JwtTokenCreate(ctx, getUser.ID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &model.JwtToken{
+		Type:  "Bearer",
+		Token: token,
+	}, nil
 }

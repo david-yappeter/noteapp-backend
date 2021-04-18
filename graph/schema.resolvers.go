@@ -5,21 +5,21 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"myapp/graph/generated"
 	"myapp/graph/model"
+	"myapp/service"
 )
 
 func (r *mutationResolver) Auth(ctx context.Context) (*model.AuthOps, error) {
-	panic(fmt.Errorf("not implemented"))
+	return &model.AuthOps{}, nil
 }
 
 func (r *mutationResolver) User(ctx context.Context) (*model.UserOps, error) {
-	panic(fmt.Errorf("not implemented"))
+	return &model.UserOps{}, nil
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	return service.UserGetByToken(ctx)
 }
 
 // Mutation returns generated.MutationResolver implementation.

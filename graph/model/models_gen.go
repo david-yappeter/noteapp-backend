@@ -2,21 +2,9 @@
 
 package model
 
-import (
-	"time"
-)
-
 type AuthOps struct {
 	Login    *JwtToken `json:"login"`
 	Register *JwtToken `json:"register"`
-}
-
-type Board struct {
-	ID        int        `json:"id"`
-	Name      string     `json:"name"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at"`
-	TeamID    int        `json:"team_id"`
 }
 
 type BoardOps struct {
@@ -28,16 +16,28 @@ type JwtToken struct {
 	Token string `json:"token"`
 }
 
-type List struct {
-	ID        int        `json:"id"`
-	Name      string     `json:"name"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at"`
-	BoardID   int        `json:"board_id"`
+type ListItemOps struct {
+	Create *ListItem `json:"create"`
 }
 
 type ListOps struct {
-	Create string `json:"create"`
+	Create *List `json:"create"`
+}
+
+type NewBoard struct {
+	Name   string `json:"name"`
+	TeamID int    `json:"team_id"`
+}
+
+type NewList struct {
+	Name    string `json:"name"`
+	BoardID int    `json:"board_id"`
+}
+
+type NewListItem struct {
+	Name   string `json:"name"`
+	ListID int    `json:"list_id"`
+	Prev   *int   `json:"prev"`
 }
 
 type NewTeamHasMember struct {
@@ -52,35 +52,12 @@ type NewUser struct {
 	ConfirmPassword string `json:"confirm_password"`
 }
 
-type Team struct {
-	ID        int        `json:"id"`
-	Name      string     `json:"name"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at"`
-	OwnerID   int        `json:"owner_id"`
-}
-
-type TeamHasMember struct {
-	ID     int `json:"id"`
-	TeamID int `json:"team_id"`
-	UserID int `json:"user_id"`
-}
-
 type TeamHasMemberOps struct {
 	Create *TeamHasMember `json:"create"`
 }
 
 type TeamOps struct {
 	Create *Team `json:"create"`
-}
-
-type User struct {
-	ID        int        `json:"id"`
-	Name      string     `json:"name"`
-	Email     string     `json:"email"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at"`
-	Avatar    *string    `json:"avatar"`
 }
 
 type UserOps struct {
