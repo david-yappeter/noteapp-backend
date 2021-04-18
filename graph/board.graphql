@@ -1,0 +1,11 @@
+type Board {
+    id: ID!
+    name: String!
+    created_at: Time!
+    updated_at: Time
+    team_id: ID!
+}
+
+type BoardOps {
+    create(name: String!): Board! @goField(forceResolver: true) @isLogin
+}

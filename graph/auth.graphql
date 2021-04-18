@@ -1,0 +1,9 @@
+type JwtToken {
+    type: String!
+    token: String!
+}
+
+type AuthOps {
+    login(email: String!, password: String!): JwtToken! @goField(forceResolver: true)
+    register(input: NewUser!): JwtToken! @goField(forceResolver: true)
+}

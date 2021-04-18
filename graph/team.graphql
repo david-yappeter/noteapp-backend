@@ -1,0 +1,11 @@
+type Team {
+    id: ID!
+    name: String!
+    created_at: Time!
+    updated_at: Time
+    owner_id: ID!
+}
+
+type TeamOps {
+    create(name: String!): Team! @goField(forceResolver: true) @goField(forceResolver: true)
+}

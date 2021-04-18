@@ -1,0 +1,11 @@
+type List {
+    id: ID!
+    name: String!
+    created_at: Time!
+    updated_at: Time
+    board_id: ID!
+}
+
+type ListOps {
+    create(name: String!): String! @goField(forceResolver: true)
+}
