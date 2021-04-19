@@ -8,4 +8,6 @@ type List struct {
 	CreatedAt time.Time  `json:"created_at" gorm:"type:timestamp;not null"`
 	UpdatedAt *time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	BoardID   int        `json:"board_id" gorm:"type:int;not null"`
+	Next      *int       `json:"next" gorm:"type:int;null;default:NULL"`
+	Prev      *int       `json:"prev" gorm:"type:int;null;default:NULL"`
 }

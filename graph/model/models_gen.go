@@ -22,7 +22,14 @@ type ListItemOps struct {
 }
 
 type ListOps struct {
-	Create *List `json:"create"`
+	Create *List   `json:"create"`
+	Move   []*List `json:"move"`
+}
+
+type MoveList struct {
+	ID           int  `json:"id"`
+	MoveBeforeID *int `json:"move_before_id"`
+	MoveAfterID  *int `json:"move_after_id"`
 }
 
 type MoveListItem struct {

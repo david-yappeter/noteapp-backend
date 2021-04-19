@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"myapp/dataloader"
 	"myapp/graph/generated"
 	"myapp/graph/model"
@@ -16,7 +17,16 @@ func (r *listResolver) ListItems(ctx context.Context, obj *model.List) ([]*model
 }
 
 func (r *listOpsResolver) Create(ctx context.Context, obj *model.ListOps, input model.NewList) (*model.List, error) {
-	return service.ListCreate(ctx, input)
+	return service.ListCreateNext(ctx, input)
+}
+
+func (r *listOpsResolver) Move(ctx context.Context, obj *model.ListOps, input model.MoveList) ([]*model.List, error) {
+	boardID, err := service.ListMovePlace(ctx, input)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return dataloader.For(ctx).ListBatchByBoardIds.Load(boardID)
 }
 
 // List returns generated.ListResolver implementation.

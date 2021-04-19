@@ -57,8 +57,6 @@ func ListItemCreateNext(ctx context.Context, input model.NewListItem) (*model.Li
 		return nil, err
 	}
 
-	// var listItem *model.ListItem
-	// var err error
 	var prev *int
 
 	if getListItem == nil {
