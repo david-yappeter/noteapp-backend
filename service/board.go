@@ -6,8 +6,6 @@ import (
 	"myapp/config"
 	"myapp/graph/model"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 //BoardCreate Create
@@ -40,17 +38,35 @@ func BoardCreate(ctx context.Context, input model.NewBoard) (*model.Board, error
 
 //BoardCheckUserAccess Check User Access
 func BoardCheckUserAccess(ctx context.Context, teamID int) (bool, error) {
-	tokenUser := ForContext(ctx)
-	if tokenUser == nil {
-		return false, gqlError("Not Logged In!", "code", "NOT_LOGGED_IN")
-	}
-
-	if _, err := TeamHasMemberGetByUserIDAndTeamID(ctx, tokenUser.ID, teamID); err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
+	access, err := TeamValidateMember(ctx, teamID)
+	if err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return access, nil
+}
+
+//BoardDataloaderBatchByTeamIds Dataloader
+func BoardDataloaderBatchByTeamIds(ctx context.Context, teamIds []int) ([][]*model.Board, []error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var boards []*model.Board
+	if err := db.Table("board").Where("team_id IN (?)", teamIds).Find(&boards).Error; err != nil {
+		fmt.Println(err)
+		return nil, []error{err}
+	}
+
+	itemById := map[int][]*model.Board{}
+	for _, val := range boards {
+		itemById[val.TeamID] = append(itemById[val.TeamID], val)
+	}
+
+	items := make([][]*model.Board, len(teamIds))
+	for i, id := range teamIds {
+		items[i] = itemById[id]
+	}
+
+	return items, nil
 }

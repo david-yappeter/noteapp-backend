@@ -11,7 +11,7 @@ import (
 
 type UserClaims struct {
 	ID int `json:"id"`
-	jwt.Claims
+	jwt.StandardClaims
 }
 
 var jwtSecret = []byte(os.Getenv("SECRET"))
@@ -23,7 +23,7 @@ func JwtTokenCreate(ctx context.Context, userID int) (string, error) {
 
 	customClaims := UserClaims{
 		ID: userID,
-		Claims: jwt.StandardClaims{
+		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiredTime,
 		},
 	}
@@ -45,7 +45,7 @@ func TokenValidate(ctx context.Context, t string) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(t, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			fmt.Println(ok)
-			return nil, fmt.Errorf("There was an error")
+			return nil, fmt.Errorf("there was an error")
 		}
 
 		return jwtSecret, nil

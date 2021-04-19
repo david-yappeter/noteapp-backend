@@ -18,8 +18,28 @@ func (r *mutationResolver) User(ctx context.Context) (*model.UserOps, error) {
 	return &model.UserOps{}, nil
 }
 
+func (r *mutationResolver) Team(ctx context.Context) (*model.TeamOps, error) {
+	return &model.TeamOps{}, nil
+}
+
+func (r *mutationResolver) Board(ctx context.Context) (*model.BoardOps, error) {
+	return &model.BoardOps{}, nil
+}
+
+func (r *mutationResolver) List(ctx context.Context) (*model.ListOps, error) {
+	return &model.ListOps{}, nil
+}
+
+func (r *mutationResolver) ListItem(ctx context.Context) (*model.ListItemOps, error) {
+	return &model.ListItemOps{}, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	return service.UserGetByToken(ctx)
+}
+
+func (r *queryResolver) Team(ctx context.Context, id int) (*model.Team, error) {
+	return service.TeamGetByIDAuthorize(ctx, id)
 }
 
 // Mutation returns generated.MutationResolver implementation.

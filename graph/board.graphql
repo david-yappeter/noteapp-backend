@@ -4,6 +4,7 @@ type Board {
     created_at: Time!
     updated_at: Time
     team_id: ID!
+    lists: [List!]! @goField(forceResolver: true)
 }
 
 input NewBoard {

@@ -14,7 +14,7 @@ import (
 )
 
 func (r *userResolver) Teams(ctx context.Context, obj *model.User) ([]*model.Team, error) {
-    return dataloader.For(ctx).TeamBatchByUserIds.Load(obj.ID)
+	return dataloader.For(ctx).TeamBatchByUserIds.Load(obj.ID)
 }
 
 func (r *userOpsResolver) EditName(ctx context.Context, obj *model.UserOps, name string) (string, error) {

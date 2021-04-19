@@ -4,6 +4,8 @@ type Team {
     created_at: Time!
     updated_at: Time
     owner_id: ID!
+    members: [User!]! @goField(forceResolver: true)
+    boards: [Board!]! @goField(forceResolver: true)
 }
 
 type TeamOps {

@@ -256,3 +256,46 @@ func UserRegister(ctx context.Context, input model.NewUser) (*model.JwtToken, er
 		Token: token,
 	}, nil
 }
+
+//UserDataloaderBatchByTeamIds Dataloader
+func UserDataloaderBatchByTeamIds(ctx context.Context, teamIds []int) ([][]*model.User, []error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var tempModel []*struct {
+		ID        int        `json:"id" gorm:"type:int;not null;AUTO_INCREMENT"`
+		Name      string     `json:"name" gorm:"type:text;not null"`
+		Email     string     `json:"email" gorm:"type:text;not null"`
+		Password  string     `json:"password" gorm:"type:text;not null"`
+		CreatedAt time.Time  `json:"created_at" gorm:"type:timestamp;not null"`
+		UpdatedAt *time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+		Avatar    *string    `json:"avatar" gorm:"type:text;null;default:NULL"`
+		TeamID    int        `json:"team_id"`
+	}
+
+	if err := db.Table("user").Select("user.*, team_has_member.team_id AS team_id").Joins("INNER JOIN team_has_member on user.id = team_has_member.user_id").Where("team_has_member.team_id IN (?)", teamIds).Find(&tempModel).Error; err != nil {
+		fmt.Println(err)
+		return nil, []error{err}
+	}
+
+	itemById := map[int][]*model.User{}
+	for _, val := range tempModel {
+		itemById[val.TeamID] = append(itemById[val.TeamID], &model.User{
+			ID:        val.ID,
+			Name:      val.Name,
+			CreatedAt: val.CreatedAt,
+			UpdatedAt: val.UpdatedAt,
+			Email:     val.Email,
+			Password:  val.Password,
+			Avatar:    val.Avatar,
+		})
+	}
+
+	items := make([][]*model.User, len(teamIds))
+	for i, id := range teamIds {
+		items[i] = itemById[id]
+	}
+
+	return items, nil
+}

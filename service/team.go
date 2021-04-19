@@ -39,7 +39,8 @@ func TeamCreate(ctx context.Context, name string) (*model.Team, error) {
 	return &team, nil
 }
 
-func TeamBatchMapByUserIds(ctx context.Context, userIds []int) (map[int][]*model.Team, error) {
+//TeamDataloaderBatchByUserIds Dataloader
+func TeamDataLoaderBatchByUserIds(ctx context.Context, userIds []int) ([][]*model.Team, []error) {
 	db := config.ConnectGorm()
 	sqlDB, _ := db.DB()
 	defer sqlDB.Close()
@@ -55,12 +56,12 @@ func TeamBatchMapByUserIds(ctx context.Context, userIds []int) (map[int][]*model
 
 	if err := db.Table("team").Select("team.*, team_has_member.user_id as user_id").Joins("INNER JOIN team_has_member on team.id = team_has_member.team_id").Where("team_has_member.user_id IN (?)", userIds).Find(&tempModel).Error; err != nil {
 		fmt.Println(err)
-		return nil, err
+		return nil, []error{err}
 	}
 
-	var mappedObject = map[int][]*model.Team{}
+	itemById := map[int][]*model.Team{}
 	for _, val := range tempModel {
-		mappedObject[val.UserID] = append(mappedObject[val.UserID], &model.Team{
+		itemById[val.UserID] = append(itemById[val.UserID], &model.Team{
 			ID:        val.ID,
 			Name:      val.Name,
 			CreatedAt: val.CreatedAt,
@@ -69,5 +70,39 @@ func TeamBatchMapByUserIds(ctx context.Context, userIds []int) (map[int][]*model
 		})
 	}
 
-	return mappedObject, nil
+	items := make([][]*model.Team, len(userIds))
+	for i, id := range userIds {
+		items[i] = itemById[id]
+	}
+
+	return items, nil
+}
+
+//TeamGetByID Get By ID
+func TeamGetByID(ctx context.Context, id int) (*model.Team, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var team model.Team
+	if err := db.Table("team").Where("id = ?", id).Take(&team).Error; err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &team, nil
+}
+
+func TeamGetByIDAuthorize(ctx context.Context, id int) (*model.Team, error) {
+	access, err := TeamValidateMember(ctx, id)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	if !access {
+		return nil, gqlError("Access Denied! (Not Member Of Team)", "code", "ACCESS_DENIED")
+	}
+
+	return TeamGetByID(ctx, id)
 }

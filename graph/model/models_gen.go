@@ -17,11 +17,20 @@ type JwtToken struct {
 }
 
 type ListItemOps struct {
-	Create *ListItem `json:"create"`
+	Create *ListItem              `json:"create"`
+	Move   map[string]interface{} `json:"move"`
 }
 
 type ListOps struct {
 	Create *List `json:"create"`
+}
+
+type MoveListItem struct {
+	ID               int  `json:"id"`
+	MoveBeforeID     *int `json:"move_before_id"`
+	MoveAfterID      *int `json:"move_after_id"`
+	MoveBeforeListID int  `json:"move_before_list_id"`
+	MoveAfterListID  int  `json:"move_after_list_id"`
 }
 
 type NewBoard struct {
@@ -37,7 +46,6 @@ type NewList struct {
 type NewListItem struct {
 	Name   string `json:"name"`
 	ListID int    `json:"list_id"`
-	Prev   *int   `json:"prev"`
 }
 
 type NewTeamHasMember struct {

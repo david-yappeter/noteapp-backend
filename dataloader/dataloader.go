@@ -2,8 +2,6 @@ package dataloader
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"myapp/graph/model"
 	"myapp/service"
 	"net/http"
@@ -13,34 +11,49 @@ import (
 const loadersKey = "dataloaders"
 
 type Loaders struct {
-	TeamBatchByUserIds TeamBatchLoaderByUserIds
+	TeamBatchByUserIds     TeamBatchLoaderByUserIds
+	UserBatchByTeamIds     UserBatchLoaderByTeamIds
+	BoardBatchByTeamIds    BoardBatchLoaderByTeamIds
+	ListBatchByBoardIds    ListBatchLoaderByBoardIds
+	ListItemBatchByListIds ListItemBatchLoaderByListIds
 }
 
-func Middleware(conn *sql.DB, next http.Handler) http.Handler {
+func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), loadersKey, &Loaders{
 			TeamBatchByUserIds: TeamBatchLoaderByUserIds{
 				maxBatch: 100,
 				wait:     1 * time.Millisecond,
 				fetch: func(ids []int) ([][]*model.Team, []error) {
-					resp, err := service.TeamBatchMapByUserIds(context.Background(), ids)
-
-					if err != nil {
-						fmt.Println(err)
-						return nil, []error{err}
-					}
-
-					itemById := map[int][]*model.Team{}
-					for key, val := range resp {
-						itemById[key] = val
-					}
-
-					items := make([][]*model.Team, len(ids))
-					for i, id := range ids {
-						items[i] = itemById[id]
-					}
-
-					return items, nil
+					return service.TeamDataLoaderBatchByUserIds(context.Background(), ids)
+				},
+			},
+			UserBatchByTeamIds: UserBatchLoaderByTeamIds{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch: func(ids []int) ([][]*model.User, []error) {
+					return service.UserDataloaderBatchByTeamIds(context.Background(), ids)
+				},
+			},
+			BoardBatchByTeamIds: BoardBatchLoaderByTeamIds{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch: func(ids []int) ([][]*model.Board, []error) {
+					return service.BoardDataloaderBatchByTeamIds(context.Background(), ids)
+				},
+			},
+			ListBatchByBoardIds: ListBatchLoaderByBoardIds{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch: func(ids []int) ([][]*model.List, []error) {
+					return service.ListDataloaderBatchByBoardIds(context.Background(), ids)
+				},
+			},
+			ListItemBatchByListIds: ListItemBatchLoaderByListIds{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch: func(ids []int) ([][]*model.ListItem, []error) {
+					return service.ListItemDataloaderBatchByListIds(context.Background(), ids)
 				},
 			},
 		})

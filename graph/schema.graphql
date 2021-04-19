@@ -6,12 +6,18 @@ directive @isLogin on FIELD_DEFINITION
 
 scalar Upload
 scalar Time
+scalar Map
 
 type Query {
     me: User! @isLogin
+    team(id: ID!): Team! @goField(forceResolver: true) @isLogin
 }
 
 type Mutation {
     auth: AuthOps! @goField(forceResolver: true)
     user: UserOps! @goField(forceResolver: true)
+    team: TeamOps! @goField(forceResolver: true)
+    board: BoardOps! @goField(forceResolver: true)
+    list: ListOps! @goField(forceResolver: true)
+    list_item: ListItemOps! @goField(forceResolver: true)
 }

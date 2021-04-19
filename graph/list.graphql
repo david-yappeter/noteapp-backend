@@ -4,6 +4,7 @@ type List {
     created_at: Time!
     updated_at: Time
     board_id: ID!
+    list_items: [ListItem!]! @goField(forceResolver: true)
 }
 
 input NewList {

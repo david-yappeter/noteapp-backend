@@ -5,16 +5,29 @@ package graph
 
 import (
 	"context"
+	"myapp/dataloader"
 	"myapp/graph/generated"
 	"myapp/graph/model"
 	"myapp/service"
 )
 
+func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]*model.User, error) {
+	return dataloader.For(ctx).UserBatchByTeamIds.Load(obj.ID)
+}
+
+func (r *teamResolver) Boards(ctx context.Context, obj *model.Team) ([]*model.Board, error) {
+	return dataloader.For(ctx).BoardBatchByTeamIds.Load(obj.ID)
+}
+
 func (r *teamOpsResolver) Create(ctx context.Context, obj *model.TeamOps, name string) (*model.Team, error) {
 	return service.TeamCreate(ctx, name)
 }
 
+// Team returns generated.TeamResolver implementation.
+func (r *Resolver) Team() generated.TeamResolver { return &teamResolver{r} }
+
 // TeamOps returns generated.TeamOpsResolver implementation.
 func (r *Resolver) TeamOps() generated.TeamOpsResolver { return &teamOpsResolver{r} }
 
+type teamResolver struct{ *Resolver }
 type teamOpsResolver struct{ *Resolver }

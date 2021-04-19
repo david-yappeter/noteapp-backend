@@ -26,17 +26,31 @@ func TeamHasMemberCreate(ctx context.Context, input model.NewTeamHasMember) (*mo
 	return &teamHasMember, nil
 }
 
-func TeamHasMemberGetByUserIDAndTeamID(ctx context.Context, userID int, teamID int) (*model.TeamHasMember, error) {
-    db := config.ConnectGorm()
+//TeamValidateMember Validate Member
+func TeamValidateMember(ctx context.Context, teamID int) (bool, error) {
+	user := ForContext(ctx)
+	if user == nil {
+		fmt.Println("Not Logged In!")
+		return false, gqlError("Not Logged In!", "code", "NOT_LOGGED_IN")
+	}
+
+	db := config.ConnectGorm()
 	sqlDB, _ := db.DB()
 	defer sqlDB.Close()
 
-	var teamHasMember model.TeamHasMember
+	var count int64
 
-	if err := db.Table("team_has_member").Where("user_id = ? AND team_id = ?", userID, teamID).Take(&teamHasMember).Error; err != nil {
+	if err := db.Table("team_has_member").Where("user_id = ? AND team_id = ?", user.ID, teamID).Count(&count).Error; err != nil {
 		fmt.Println(err)
-		return nil, err
+		return false, err
 	}
 
-	return &teamHasMember, nil
+	if count == 0 {
+		return false, nil
+	} else if count == 1 {
+		return true, nil
+	}
+
+	fmt.Println("Unhandled Data")
+	return false, gqlError("Unhandled Case", "code", "UNHANDLED_CASE")
 }
