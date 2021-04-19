@@ -51,6 +51,14 @@ func ListGetLastNodeByBoardID(ctx context.Context, boardID int) (*model.List, er
 
 //ListItemCreateNext Create Next
 func ListCreateNext(ctx context.Context, input model.NewList) (*model.List, error) {
+	if access, err := BoardValidateMember(ctx, input.BoardID); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return nil, gqlError("(Not Member Of Team or Board doesn't exist", "code", "ACCESS_DENIED")
+	}
+
 	getList, err := ListGetLastNodeByBoardID(ctx, input.BoardID)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		fmt.Println(err)
@@ -263,4 +271,39 @@ func ListUpdateMove(ctx context.Context, input map[int][]*int) (string, error) {
 	}
 
 	return "Success", nil
+}
+
+//ListValidateMember List Validate Member
+func ListValidateMember(ctx context.Context, listID int) (bool, error) {
+	user := ForContext(ctx)
+	if user == nil {
+		fmt.Println("Not Logged In!")
+		return false, gqlError("Not Logged In!", "code", "NOT_LOGGED_IN")
+	}
+
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var count int64
+
+	if err := db.Table("list").Joins(
+		"INNER JOIN board on list.board_id = board.id",
+	).Joins(
+		"INNER JOIN team on board.team_id = team.id",
+	).Joins(
+		"INNER JOIN team_has_member on team_has_member.team_id = team.id",
+	).Where("list.id = ? and team_has_member.user_id = ?", listID, user.ID).Count(&count).Error; err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	if count == 0 {
+		return false, nil
+	} else if count == 1 {
+		return true, nil
+	}
+
+	fmt.Println("Unhandled Data")
+	return false, gqlError("Unhandled Case", "code", "UNHANDLED_CASE")
 }

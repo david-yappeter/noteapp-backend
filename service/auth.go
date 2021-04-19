@@ -19,7 +19,7 @@ var jwtSecret = []byte(os.Getenv("SECRET"))
 //JwtTokenCreate Create
 func JwtTokenCreate(ctx context.Context, userID int) (string, error) {
 	var signingMethod = jwt.SigningMethodHS256
-	var expiredTime = time.Now().UTC().Unix()
+	var expiredTime = time.Now().UTC().AddDate(0, 0, 7).Unix()
 
 	customClaims := UserClaims{
 		ID: userID,

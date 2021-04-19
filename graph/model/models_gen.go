@@ -67,15 +67,13 @@ type NewUser struct {
 	ConfirmPassword string `json:"confirm_password"`
 }
 
-type TeamHasMemberOps struct {
-	Create *TeamHasMember `json:"create"`
-}
-
 type TeamOps struct {
-	Create *Team `json:"create"`
+	Create       *Team          `json:"create"`
+	AddMember    *TeamHasMember `json:"add_member"`
+	RemoveMember string         `json:"remove_member"`
 }
 
 type UserOps struct {
-	EditName   string `json:"edit_name"`
-	EditAvatar string `json:"edit_avatar"`
+	EditName   string  `json:"edit_name"`
+	EditAvatar *string `json:"edit_avatar"`
 }

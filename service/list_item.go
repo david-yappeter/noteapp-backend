@@ -51,6 +51,14 @@ func ListItemGetLastNodeByListID(ctx context.Context, listID int) (*model.ListIt
 
 //ListItemCreateNext Create Next
 func ListItemCreateNext(ctx context.Context, input model.NewListItem) (*model.ListItem, error) {
+	if access, err := ListValidateMember(ctx, input.ListID); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return nil, gqlError("Not Member Of Team or List doesn't exist", "code", "ACCESS_DENIED")
+	}
+
 	getListItem, err := ListItemGetLastNodeByListID(ctx, input.ListID)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		fmt.Println(err)

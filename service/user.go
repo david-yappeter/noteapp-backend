@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/badoux/checkmail"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"gorm.io/gorm"
@@ -26,6 +27,7 @@ func UserCreate(ctx context.Context, input model.NewUser) (*model.User, error) {
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: nil,
 		Avatar:    nil,
+		Password:  tools.PasswordHash(input.Password),
 	}
 
 	if err := db.Table("user").Create(&user).Error; err != nil {
@@ -76,21 +78,45 @@ func UserUpdateName(ctx context.Context, name string) (string, error) {
 }
 
 //UserUpdateName Update Name
-func UserUpdateAvatar(ctx context.Context, avatar *string) (string, error) {
+func UserUpdateAvatar(ctx context.Context, avatar *graphql.Upload) (*string, error) {
 	tokenUser := ForContext(ctx)
+	getUser, err := UserGetByID(ctx, tokenUser.ID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
+	if getUser.Avatar != nil {
+		GdriveDeleteFile(*getUser.Avatar)
+	}
+
+	var avatarFileID *string
 	var args []updateArgs
-	args = append(args, updateArgs{
-		Key:   "avatar",
-		Value: avatar,
-	})
+	if avatar != nil {
+		fileID, err := UploadFile(ctx, *avatar)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		args = append(args, updateArgs{
+			Key:   "avatar",
+			Value: fileID,
+		})
+		avatarFileID = &fileID
+	} else {
+		args = append(args, updateArgs{
+			Key:   "avatar",
+			Value: nil,
+		})
+		avatarFileID = nil
+	}
 
 	if _, err := UserUpdateMultipleColumnByUserID(ctx, args, tokenUser.ID); err != nil {
 		fmt.Println(err)
-		return "Failed", err
+		return nil, err
 	}
 
-	return "Success", nil
+	return GdriveViewLink(avatarFileID), nil
 }
 
 //UserGetByID Get By ID

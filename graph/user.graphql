@@ -17,5 +17,5 @@ input NewUser {
 
 type UserOps {
     edit_name(name: String!): String! @goField(forceResolver: true) @isLogin
-    edit_avatar(image: Upload): String! @goField(forceResolver: true) @isLogin
+    edit_avatar(image: Upload): String @goField(forceResolver: true) @isLogin
 }

@@ -21,7 +21,7 @@ func (r *userOpsResolver) EditName(ctx context.Context, obj *model.UserOps, name
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userOpsResolver) EditAvatar(ctx context.Context, obj *model.UserOps, image *graphql.Upload) (string, error) {
+func (r *userOpsResolver) EditAvatar(ctx context.Context, obj *model.UserOps, image *graphql.Upload) (*string, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

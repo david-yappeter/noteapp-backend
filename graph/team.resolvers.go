@@ -23,6 +23,14 @@ func (r *teamOpsResolver) Create(ctx context.Context, obj *model.TeamOps, name s
 	return service.TeamCreate(ctx, name)
 }
 
+func (r *teamOpsResolver) AddMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (*model.TeamHasMember, error) {
+	return service.TeamAddMember(ctx, input)
+}
+
+func (r *teamOpsResolver) RemoveMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (string, error) {
+	return service.TeamRemoveMember(ctx, input)
+}
+
 // Team returns generated.TeamResolver implementation.
 func (r *Resolver) Team() generated.TeamResolver { return &teamResolver{r} }
 

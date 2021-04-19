@@ -46,7 +46,6 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Team() TeamResolver
-	TeamHasMemberOps() TeamHasMemberOpsResolver
 	TeamOps() TeamOpsResolver
 	User() UserResolver
 	UserOps() UserOpsResolver
@@ -141,12 +140,10 @@ type ComplexityRoot struct {
 		UserID func(childComplexity int) int
 	}
 
-	TeamHasMemberOps struct {
-		Create func(childComplexity int, input model.NewTeamHasMember) int
-	}
-
 	TeamOps struct {
-		Create func(childComplexity int, name string) int
+		AddMember    func(childComplexity int, input model.NewTeamHasMember) int
+		Create       func(childComplexity int, name string) int
+		RemoveMember func(childComplexity int, input model.NewTeamHasMember) int
 	}
 
 	User struct {
@@ -202,18 +199,17 @@ type TeamResolver interface {
 	Members(ctx context.Context, obj *model.Team) ([]*model.User, error)
 	Boards(ctx context.Context, obj *model.Team) ([]*model.Board, error)
 }
-type TeamHasMemberOpsResolver interface {
-	Create(ctx context.Context, obj *model.TeamHasMemberOps, input model.NewTeamHasMember) (*model.TeamHasMember, error)
-}
 type TeamOpsResolver interface {
 	Create(ctx context.Context, obj *model.TeamOps, name string) (*model.Team, error)
+	AddMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (*model.TeamHasMember, error)
+	RemoveMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (string, error)
 }
 type UserResolver interface {
 	Teams(ctx context.Context, obj *model.User) ([]*model.Team, error)
 }
 type UserOpsResolver interface {
 	EditName(ctx context.Context, obj *model.UserOps, name string) (string, error)
-	EditAvatar(ctx context.Context, obj *model.UserOps, image *graphql.Upload) (string, error)
+	EditAvatar(ctx context.Context, obj *model.UserOps, image *graphql.Upload) (*string, error)
 }
 
 type executableSchema struct {
@@ -607,17 +603,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TeamHasMember.UserID(childComplexity), true
 
-	case "TeamHasMemberOps.create":
-		if e.complexity.TeamHasMemberOps.Create == nil {
+	case "TeamOps.add_member":
+		if e.complexity.TeamOps.AddMember == nil {
 			break
 		}
 
-		args, err := ec.field_TeamHasMemberOps_create_args(context.TODO(), rawArgs)
+		args, err := ec.field_TeamOps_add_member_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.TeamHasMemberOps.Create(childComplexity, args["input"].(model.NewTeamHasMember)), true
+		return e.complexity.TeamOps.AddMember(childComplexity, args["input"].(model.NewTeamHasMember)), true
 
 	case "TeamOps.create":
 		if e.complexity.TeamOps.Create == nil {
@@ -630,6 +626,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.TeamOps.Create(childComplexity, args["name"].(string)), true
+
+	case "TeamOps.remove_member":
+		if e.complexity.TeamOps.RemoveMember == nil {
+			break
+		}
+
+		args, err := ec.field_TeamOps_remove_member_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.TeamOps.RemoveMember(childComplexity, args["input"].(model.NewTeamHasMember)), true
 
 	case "User.avatar":
 		if e.complexity.User.Avatar == nil {
@@ -882,6 +890,8 @@ type Mutation {
 
 type TeamOps {
     create(name: String!): Team! @goField(forceResolver: true) @goField(forceResolver: true) @isLogin
+    add_member(input: NewTeamHasMember!): TeamHasMember! @goField(forceResolver: true) @isLogin
+    remove_member(input: NewTeamHasMember!): String! @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
 	{Name: "graph/team_has_member.graphql", Input: `type TeamHasMember {
     id: ID!
@@ -893,10 +903,7 @@ input NewTeamHasMember {
     team_id: ID!
     user_id: ID!
 }
-
-type TeamHasMemberOps {
-    create(input: NewTeamHasMember!): TeamHasMember! @goField(forceResolver: true) @isLogin
-}`, BuiltIn: false},
+`, BuiltIn: false},
 	{Name: "graph/user.graphql", Input: `type User {
     id: ID!
     name: String!
@@ -916,7 +923,7 @@ input NewUser {
 
 type UserOps {
     edit_name(name: String!): String! @goField(forceResolver: true) @isLogin
-    edit_avatar(image: Upload): String! @goField(forceResolver: true) @isLogin
+    edit_avatar(image: Upload): String @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -1069,7 +1076,7 @@ func (ec *executionContext) field_Query_team_args(ctx context.Context, rawArgs m
 	return args, nil
 }
 
-func (ec *executionContext) field_TeamHasMemberOps_create_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_TeamOps_add_member_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.NewTeamHasMember
@@ -1096,6 +1103,21 @@ func (ec *executionContext) field_TeamOps_create_args(ctx context.Context, rawAr
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_TeamOps_remove_member_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewTeamHasMember
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNNewTeamHasMember2myappᚋgraphᚋmodelᚐNewTeamHasMember(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -3050,68 +3072,6 @@ func (ec *executionContext) _TeamHasMember_user_id(ctx context.Context, field gr
 	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _TeamHasMemberOps_create(ctx context.Context, field graphql.CollectedField, obj *model.TeamHasMemberOps) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "TeamHasMemberOps",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_TeamHasMemberOps_create_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.TeamHasMemberOps().Create(rctx, obj, args["input"].(model.NewTeamHasMember))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsLogin == nil {
-				return nil, errors.New("directive isLogin is not implemented")
-			}
-			return ec.directives.IsLogin(ctx, obj, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*model.TeamHasMember); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *myapp/graph/model.TeamHasMember`, tmp)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.TeamHasMember)
-	fc.Result = res
-	return ec.marshalNTeamHasMember2ᚖmyappᚋgraphᚋmodelᚐTeamHasMember(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _TeamOps_create(ctx context.Context, field graphql.CollectedField, obj *model.TeamOps) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3172,6 +3132,130 @@ func (ec *executionContext) _TeamOps_create(ctx context.Context, field graphql.C
 	res := resTmp.(*model.Team)
 	fc.Result = res
 	return ec.marshalNTeam2ᚖmyappᚋgraphᚋmodelᚐTeam(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TeamOps_add_member(ctx context.Context, field graphql.CollectedField, obj *model.TeamOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TeamOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_TeamOps_add_member_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.TeamOps().AddMember(rctx, obj, args["input"].(model.NewTeamHasMember))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLogin == nil {
+				return nil, errors.New("directive isLogin is not implemented")
+			}
+			return ec.directives.IsLogin(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.TeamHasMember); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *myapp/graph/model.TeamHasMember`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TeamHasMember)
+	fc.Result = res
+	return ec.marshalNTeamHasMember2ᚖmyappᚋgraphᚋmodelᚐTeamHasMember(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TeamOps_remove_member(ctx context.Context, field graphql.CollectedField, obj *model.TeamOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TeamOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_TeamOps_remove_member_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.TeamOps().RemoveMember(rctx, obj, args["input"].(model.NewTeamHasMember))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLogin == nil {
+				return nil, errors.New("directive isLogin is not implemented")
+			}
+			return ec.directives.IsLogin(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -3517,24 +3601,21 @@ func (ec *executionContext) _UserOps_edit_avatar(ctx context.Context, field grap
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(string); ok {
+		if data, ok := tmp.(*string); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -5485,42 +5566,6 @@ func (ec *executionContext) _TeamHasMember(ctx context.Context, sel ast.Selectio
 	return out
 }
 
-var teamHasMemberOpsImplementors = []string{"TeamHasMemberOps"}
-
-func (ec *executionContext) _TeamHasMemberOps(ctx context.Context, sel ast.SelectionSet, obj *model.TeamHasMemberOps) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, teamHasMemberOpsImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("TeamHasMemberOps")
-		case "create":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._TeamHasMemberOps_create(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var teamOpsImplementors = []string{"TeamOps"}
 
 func (ec *executionContext) _TeamOps(ctx context.Context, sel ast.SelectionSet, obj *model.TeamOps) graphql.Marshaler {
@@ -5541,6 +5586,34 @@ func (ec *executionContext) _TeamOps(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._TeamOps_create(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "add_member":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TeamOps_add_member(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "remove_member":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TeamOps_remove_member(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -5651,9 +5724,6 @@ func (ec *executionContext) _UserOps(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._UserOps_edit_avatar(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
 		default:

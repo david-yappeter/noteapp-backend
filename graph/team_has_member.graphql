@@ -8,7 +8,3 @@ input NewTeamHasMember {
     team_id: ID!
     user_id: ID!
 }
-
-type TeamHasMemberOps {
-    create(input: NewTeamHasMember!): TeamHasMember! @goField(forceResolver: true) @isLogin
-}

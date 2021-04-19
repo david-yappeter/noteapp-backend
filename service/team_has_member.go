@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"myapp/config"
 	"myapp/graph/model"
+
+	"gorm.io/gorm"
 )
 
 //TeamHasMemberCreate Create
@@ -19,6 +21,71 @@ func TeamHasMemberCreate(ctx context.Context, input model.NewTeamHasMember) (*mo
 	}
 
 	if err := db.Table("team_has_member").Create(&teamHasMember).Error; err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &teamHasMember, nil
+}
+
+//TeamAddMember
+func TeamAddMember(ctx context.Context, input model.NewTeamHasMember) (*model.TeamHasMember, error) {
+	if access, err := TeamValidateMember(ctx, input.TeamID); err != nil || !access {
+		if err != nil {
+			return nil, err
+		}
+		return nil, gqlError("Access Denied! (Not Member Of Team)", "code", "ACCESS_DENIED")
+	}
+
+	if getTeamHasMember, err := TeamHasMemberGetByTeamIDAndUserID(ctx, input.TeamID, input.UserID); err != nil || getTeamHasMember != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		if getTeamHasMember != nil {
+			return nil, gqlError("Already Part of Team Member", "code", "NOTHING_CHANGED")
+		}
+	}
+
+	return TeamHasMemberCreate(ctx, input)
+}
+
+//TeamRemoveMember Remove Member
+func TeamRemoveMember(ctx context.Context, input model.NewTeamHasMember) (string, error) {
+	if access, err := TeamValidateMember(ctx, input.TeamID); err != nil || !access {
+		if err != nil {
+			return "Failed", err
+		}
+		return "Failed", gqlError("Access Denied! (Not Member Of Team)", "code", "ACCESS_DENIED")
+	}
+
+	return TeamHasMemberDelete(ctx, input)
+}
+
+//TeamHasMemberDelete Delete
+func TeamHasMemberDelete(ctx context.Context, input model.NewTeamHasMember) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Table("team_has_member").Where("team_id = ? AND user_id = ?", input.TeamID, input.UserID).Delete(&model.TeamHasMember{}).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+//TeamHasMemberGetByTeamIDAndUserID Get By Team ID and User ID
+func TeamHasMemberGetByTeamIDAndUserID(ctx context.Context, teamID int, userID int) (*model.TeamHasMember, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var teamHasMember model.TeamHasMember
+
+	if err := db.Table("team_has_member").Where("user_id = ? AND team_id = ?", userID, teamID).Take(&teamHasMember).Error; err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
