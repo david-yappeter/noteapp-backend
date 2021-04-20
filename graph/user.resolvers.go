@@ -5,10 +5,10 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"myapp/dataloader"
 	"myapp/graph/generated"
 	"myapp/graph/model"
+	"myapp/service"
 
 	"github.com/99designs/gqlgen/graphql"
 )
@@ -18,11 +18,15 @@ func (r *userResolver) Teams(ctx context.Context, obj *model.User) ([]*model.Tea
 }
 
 func (r *userOpsResolver) EditName(ctx context.Context, obj *model.UserOps, name string) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	return service.UserUpdateName(ctx, name)
 }
 
 func (r *userOpsResolver) EditAvatar(ctx context.Context, obj *model.UserOps, image *graphql.Upload) (*string, error) {
-	panic(fmt.Errorf("not implemented"))
+	return service.UserUpdateAvatar(ctx, image)
+}
+
+func (r *userOpsResolver) EditPassword(ctx context.Context, obj *model.UserOps, newPassword string) (string, error) {
+	return service.UserEditPassword(ctx, newPassword)
 }
 
 // User returns generated.UserResolver implementation.

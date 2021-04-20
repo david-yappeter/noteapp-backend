@@ -23,4 +23,5 @@ input MoveList {
 type ListOps {
     create(input: NewList!): List! @goField(forceResolver: true)
     move(input: MoveList!): [List!]! @goField(forceResolver: true)
+    update_name(id: ID!, name: String!): String! @goField(forceResolver: true)
 }

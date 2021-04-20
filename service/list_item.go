@@ -287,3 +287,38 @@ func ListItemUpdateMove(ctx context.Context, input map[int][]*int) (string, erro
 
 	return "Success", nil
 }
+
+//ListUpdateMultipleColumnsByID Update Multiple Columns
+func ListItemUpdateMultipleColumnsByID(ctx context.Context, id int, args []updateArgs) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	data := map[string]interface{}{
+		"updated_at": time.Now().UTC(),
+	}
+	for _, val := range args {
+		data[val.Key] = val.Value
+	}
+
+	if err := db.Table("list_item").Where("id = ?", id).Updates(data).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+//ListUpdateName Update Name
+func ListItemUpdateName(ctx context.Context, id int, name string) (string, error) {
+	if stringIsEmpty(name) {
+		return "Failed", gqlError("Invalid Name", "code", "INVALID_NAME")
+	}
+
+	var args []updateArgs
+	args = append(args, updateArgs{
+		Key:   "name",
+		Value: name,
+	})
+	return ListItemUpdateMultipleColumnsByID(ctx, id, args)
+}

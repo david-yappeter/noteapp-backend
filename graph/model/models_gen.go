@@ -8,7 +8,8 @@ type AuthOps struct {
 }
 
 type BoardOps struct {
-	Create *Board `json:"create"`
+	Create     *Board `json:"create"`
+	UpdateName string `json:"update_name"`
 }
 
 type JwtToken struct {
@@ -17,13 +18,15 @@ type JwtToken struct {
 }
 
 type ListItemOps struct {
-	Create *ListItem              `json:"create"`
-	Move   map[string]interface{} `json:"move"`
+	Create     *ListItem              `json:"create"`
+	Move       map[string]interface{} `json:"move"`
+	UpdateName string                 `json:"update_name"`
 }
 
 type ListOps struct {
-	Create *List   `json:"create"`
-	Move   []*List `json:"move"`
+	Create     *List   `json:"create"`
+	Move       []*List `json:"move"`
+	UpdateName string  `json:"update_name"`
 }
 
 type MoveList struct {
@@ -69,11 +72,13 @@ type NewUser struct {
 
 type TeamOps struct {
 	Create       *Team          `json:"create"`
+	UpdateName   *Team          `json:"update_name"`
 	AddMember    *TeamHasMember `json:"add_member"`
 	RemoveMember string         `json:"remove_member"`
 }
 
 type UserOps struct {
-	EditName   string  `json:"edit_name"`
-	EditAvatar *string `json:"edit_avatar"`
+	EditName     string  `json:"edit_name"`
+	EditAvatar   *string `json:"edit_avatar"`
+	EditPassword string  `json:"edit_password"`
 }

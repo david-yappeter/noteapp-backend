@@ -42,6 +42,10 @@ func (r *listItemOpsResolver) Move(ctx context.Context, obj *model.ListItemOps, 
 	return mappedObject, nil
 }
 
+func (r *listItemOpsResolver) UpdateName(ctx context.Context, obj *model.ListItemOps, id int, name string) (string, error) {
+	return service.ListItemUpdateName(ctx, id, name)
+}
+
 // ListItemOps returns generated.ListItemOpsResolver implementation.
 func (r *Resolver) ListItemOps() generated.ListItemOpsResolver { return &listItemOpsResolver{r} }
 

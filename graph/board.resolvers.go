@@ -19,6 +19,10 @@ func (r *boardOpsResolver) Create(ctx context.Context, obj *model.BoardOps, inpu
 	return service.BoardCreate(ctx, input)
 }
 
+func (r *boardOpsResolver) UpdateName(ctx context.Context, obj *model.BoardOps, id int, name string) (string, error) {
+	return service.BoardUpdateName(ctx, id, name)
+}
+
 // Board returns generated.BoardResolver implementation.
 func (r *Resolver) Board() generated.BoardResolver { return &boardResolver{r} }
 

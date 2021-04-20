@@ -26,6 +26,7 @@ func main() {
 	}
 
 	router := chi.NewRouter()
+	router.Use(service.CorsMiddleware)
 	router.Use(service.Middleware)
 	router.Use(dataloader.Middleware)
 

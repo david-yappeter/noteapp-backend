@@ -9,7 +9,8 @@ type Team {
 }
 
 type TeamOps {
-    create(name: String!): Team! @goField(forceResolver: true) @goField(forceResolver: true) @isLogin
+    create(name: String!): Team! @goField(forceResolver: true) @isLogin
+    update_name(id: ID!, name: String!): Team! @goField(forceResolver: true) @isLogin
     add_member(input: NewTeamHasMember!): TeamHasMember! @goField(forceResolver: true) @isLogin
     remove_member(input: NewTeamHasMember!): String! @goField(forceResolver: true) @isLogin
 }

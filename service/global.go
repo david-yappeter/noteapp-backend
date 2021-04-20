@@ -1,6 +1,10 @@
 package service
 
-import "github.com/vektah/gqlparser/v2/gqlerror"
+import (
+	"strings"
+
+	"github.com/vektah/gqlparser/v2/gqlerror"
+)
 
 type updateArgs struct {
 	Key   string      `json:"key"`
@@ -14,4 +18,9 @@ func gqlError(message string, extCode string, extVal interface{}) error {
 			extCode: extVal,
 		},
 	}
+}
+
+//stringCheckEmpty true -> Empty, false -> not empty
+func stringIsEmpty(s string) bool {
+	return strings.EqualFold(strings.Trim(s, " "), "")
 }

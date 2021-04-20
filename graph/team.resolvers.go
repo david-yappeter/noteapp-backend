@@ -23,6 +23,10 @@ func (r *teamOpsResolver) Create(ctx context.Context, obj *model.TeamOps, name s
 	return service.TeamCreate(ctx, name)
 }
 
+func (r *teamOpsResolver) UpdateName(ctx context.Context, obj *model.TeamOps, id int, name string) (*model.Team, error) {
+	return service.TeamUpdateName(ctx, id, name)
+}
+
 func (r *teamOpsResolver) AddMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (*model.TeamHasMember, error) {
 	return service.TeamAddMember(ctx, input)
 }

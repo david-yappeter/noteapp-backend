@@ -14,4 +14,5 @@ input NewBoard {
 
 type BoardOps {
     create(input: NewBoard!): Board! @goField(forceResolver: true) @isLogin
+    update_name(id: ID!, name: String!): String! @goField(forceResolver: true) @isLogin
 }

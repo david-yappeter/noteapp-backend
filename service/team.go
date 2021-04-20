@@ -106,3 +106,54 @@ func TeamGetByIDAuthorize(ctx context.Context, id int) (*model.Team, error) {
 
 	return TeamGetByID(ctx, id)
 }
+
+//TeamUpdateMultipleColumnsByID Update Multiple Columns
+func TeamUpdateMultipleColumnsByID(ctx context.Context, id int, args []updateArgs) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	data := map[string]interface{}{
+		"updated_at": time.Now().UTC(),
+	}
+
+	for _, val := range args {
+		data[val.Key] = val.Value
+	}
+
+	if err := db.Table("team").Where("id = ?", id).Updates(data).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+//TeamUpdateName Update Name
+func TeamUpdateName(ctx context.Context, id int, name string) (*model.Team, error) {
+	if stringIsEmpty(name) {
+		return nil, gqlError("Invalid Name", "code", "INVALID_NAME")
+	}
+
+	access, err := TeamValidateMember(ctx, id)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	if !access {
+		return nil, gqlError("Access Denied! (Not Member Of Team)", "code", "ACCESS_DENIED")
+	}
+
+	var args []updateArgs
+	args = append(args, updateArgs{
+		Key:   "name",
+		Value: name,
+	})
+	if _, err := TeamUpdateMultipleColumnsByID(ctx, id, args); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return TeamGetByID(ctx, id)
+}

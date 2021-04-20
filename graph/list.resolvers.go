@@ -29,6 +29,10 @@ func (r *listOpsResolver) Move(ctx context.Context, obj *model.ListOps, input mo
 	return dataloader.For(ctx).ListBatchByBoardIds.Load(boardID)
 }
 
+func (r *listOpsResolver) UpdateName(ctx context.Context, obj *model.ListOps, id int, name string) (string, error) {
+	return service.ListUpdateName(ctx, id, name)
+}
+
 // List returns generated.ListResolver implementation.
 func (r *Resolver) List() generated.ListResolver { return &listResolver{r} }
 

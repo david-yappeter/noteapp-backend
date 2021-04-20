@@ -14,7 +14,7 @@ func BoardCreate(ctx context.Context, input model.NewBoard) (*model.Board, error
 		if err != nil {
 			return nil, err
 		}
-		return nil, gqlError("Not A Member Of Team or Board doesn't exist", "code", "NOT_MEMBER_OF_TEAM")
+		return nil, gqlError("Not A Member Of Team or Team doesn't exist", "code", "NOT_MEMBER_OF_TEAM")
 	}
 
 	db := config.ConnectGorm()
@@ -102,4 +102,39 @@ func BoardValidateMember(ctx context.Context, boardID int) (bool, error) {
 
 	fmt.Println("Unhandled Data")
 	return false, gqlError("Unhandled Case", "code", "UNHANDLED_CASE")
+}
+
+//BoardUpdateMultipleColumnsByID Update Columns
+func BoardUpdateMultipleColumnsByID(ctx context.Context, id int, args []updateArgs) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	data := map[string]interface{}{
+		"updated_at": time.Now().UTC(),
+	}
+	for _, val := range args {
+		data[val.Key] = val.Value
+	}
+
+	if err := db.Table("board").Where("id = ?", id).Updates(data).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+//BoardUpdateName Update Name
+func BoardUpdateName(ctx context.Context, id int, name string) (string, error) {
+	if stringIsEmpty(name) {
+		return "Failed", gqlError("Invalid Name", "code", "INVALID_NAME")
+	}
+
+	var args []updateArgs
+	args = append(args, updateArgs{
+		Key:   "name",
+		Value: name,
+	})
+	return BoardUpdateMultipleColumnsByID(ctx, id, args)
 }

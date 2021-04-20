@@ -51,7 +51,7 @@ func UserUpdateMultipleColumnByUserID(ctx context.Context, args []updateArgs, us
 		data[val.Key] = val.Value
 	}
 
-	if err := db.Table("user").Updates(data).Where("id = ?", userID).Error; err != nil {
+	if err := db.Table("user").Where("id = ?", userID).Updates(data).Error; err != nil {
 		fmt.Println(err)
 		return "Failed", err
 	}
@@ -132,6 +132,8 @@ func UserGetByID(ctx context.Context, id int) (*model.User, error) {
 		return nil, err
 	}
 
+	user.Avatar = GdriveViewLink(user.Avatar)
+
 	return &user, nil
 }
 
@@ -167,6 +169,10 @@ func UserPaginationGetNodes(ctx context.Context, limit *int, page *int, ascendin
 		return nil, err
 	}
 
+	for index, val := range users {
+		users[index].Avatar = GdriveViewLink(val.Avatar)
+	}
+
 	return users, nil
 }
 
@@ -197,6 +203,8 @@ func UserGetByEmail(ctx context.Context, email string) (*model.User, error) {
 		fmt.Println(err)
 		return nil, err
 	}
+
+	user.Avatar = GdriveViewLink(user.Avatar)
 
 	return &user, nil
 }
@@ -305,6 +313,10 @@ func UserDataloaderBatchByTeamIds(ctx context.Context, teamIds []int) ([][]*mode
 		return nil, []error{err}
 	}
 
+	for index, val := range tempModel {
+		tempModel[index].Avatar = GdriveViewLink(val.Avatar)
+	}
+
 	itemById := map[int][]*model.User{}
 	for _, val := range tempModel {
 		itemById[val.TeamID] = append(itemById[val.TeamID], &model.User{
@@ -324,4 +336,18 @@ func UserDataloaderBatchByTeamIds(ctx context.Context, teamIds []int) ([][]*mode
 	}
 
 	return items, nil
+}
+
+//UserEditPassword Edit Password
+func UserEditPassword(ctx context.Context, newPassword string) (string, error) {
+	if stringIsEmpty(newPassword) {
+		return "Failed", gqlError("Invalid New Password", "code", "INVALID_NEW_PASSWORD")
+	}
+
+	var args []updateArgs
+	args = append(args, updateArgs{
+		Key:   "password",
+		Value: tools.PasswordHash(newPassword),
+	})
+	return UserUpdateMultipleColumnByUserID(ctx, args, ForContext(ctx).ID)
 }

@@ -71,7 +71,8 @@ type ComplexityRoot struct {
 	}
 
 	BoardOps struct {
-		Create func(childComplexity int, input model.NewBoard) int
+		Create     func(childComplexity int, input model.NewBoard) int
+		UpdateName func(childComplexity int, id int, name string) int
 	}
 
 	JwtToken struct {
@@ -101,13 +102,15 @@ type ComplexityRoot struct {
 	}
 
 	ListItemOps struct {
-		Create func(childComplexity int, input model.NewListItem) int
-		Move   func(childComplexity int, input model.MoveListItem) int
+		Create     func(childComplexity int, input model.NewListItem) int
+		Move       func(childComplexity int, input model.MoveListItem) int
+		UpdateName func(childComplexity int, id int, name string) int
 	}
 
 	ListOps struct {
-		Create func(childComplexity int, input model.NewList) int
-		Move   func(childComplexity int, input model.MoveList) int
+		Create     func(childComplexity int, input model.NewList) int
+		Move       func(childComplexity int, input model.MoveList) int
+		UpdateName func(childComplexity int, id int, name string) int
 	}
 
 	Mutation struct {
@@ -144,6 +147,7 @@ type ComplexityRoot struct {
 		AddMember    func(childComplexity int, input model.NewTeamHasMember) int
 		Create       func(childComplexity int, name string) int
 		RemoveMember func(childComplexity int, input model.NewTeamHasMember) int
+		UpdateName   func(childComplexity int, id int, name string) int
 	}
 
 	User struct {
@@ -157,8 +161,9 @@ type ComplexityRoot struct {
 	}
 
 	UserOps struct {
-		EditAvatar func(childComplexity int, image *graphql.Upload) int
-		EditName   func(childComplexity int, name string) int
+		EditAvatar   func(childComplexity int, image *graphql.Upload) int
+		EditName     func(childComplexity int, name string) int
+		EditPassword func(childComplexity int, newPassword string) int
 	}
 }
 
@@ -171,6 +176,7 @@ type BoardResolver interface {
 }
 type BoardOpsResolver interface {
 	Create(ctx context.Context, obj *model.BoardOps, input model.NewBoard) (*model.Board, error)
+	UpdateName(ctx context.Context, obj *model.BoardOps, id int, name string) (string, error)
 }
 type ListResolver interface {
 	ListItems(ctx context.Context, obj *model.List) ([]*model.ListItem, error)
@@ -178,10 +184,12 @@ type ListResolver interface {
 type ListItemOpsResolver interface {
 	Create(ctx context.Context, obj *model.ListItemOps, input model.NewListItem) (*model.ListItem, error)
 	Move(ctx context.Context, obj *model.ListItemOps, input model.MoveListItem) (map[string]interface{}, error)
+	UpdateName(ctx context.Context, obj *model.ListItemOps, id int, name string) (string, error)
 }
 type ListOpsResolver interface {
 	Create(ctx context.Context, obj *model.ListOps, input model.NewList) (*model.List, error)
 	Move(ctx context.Context, obj *model.ListOps, input model.MoveList) ([]*model.List, error)
+	UpdateName(ctx context.Context, obj *model.ListOps, id int, name string) (string, error)
 }
 type MutationResolver interface {
 	Auth(ctx context.Context) (*model.AuthOps, error)
@@ -201,6 +209,7 @@ type TeamResolver interface {
 }
 type TeamOpsResolver interface {
 	Create(ctx context.Context, obj *model.TeamOps, name string) (*model.Team, error)
+	UpdateName(ctx context.Context, obj *model.TeamOps, id int, name string) (*model.Team, error)
 	AddMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (*model.TeamHasMember, error)
 	RemoveMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (string, error)
 }
@@ -210,6 +219,7 @@ type UserResolver interface {
 type UserOpsResolver interface {
 	EditName(ctx context.Context, obj *model.UserOps, name string) (string, error)
 	EditAvatar(ctx context.Context, obj *model.UserOps, image *graphql.Upload) (*string, error)
+	EditPassword(ctx context.Context, obj *model.UserOps, newPassword string) (string, error)
 }
 
 type executableSchema struct {
@@ -304,6 +314,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.BoardOps.Create(childComplexity, args["input"].(model.NewBoard)), true
+
+	case "BoardOps.update_name":
+		if e.complexity.BoardOps.UpdateName == nil {
+			break
+		}
+
+		args, err := ec.field_BoardOps_update_name_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.BoardOps.UpdateName(childComplexity, args["id"].(int), args["name"].(string)), true
 
 	case "JwtToken.token":
 		if e.complexity.JwtToken.Token == nil {
@@ -448,6 +470,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ListItemOps.Move(childComplexity, args["input"].(model.MoveListItem)), true
 
+	case "ListItemOps.update_name":
+		if e.complexity.ListItemOps.UpdateName == nil {
+			break
+		}
+
+		args, err := ec.field_ListItemOps_update_name_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ListItemOps.UpdateName(childComplexity, args["id"].(int), args["name"].(string)), true
+
 	case "ListOps.create":
 		if e.complexity.ListOps.Create == nil {
 			break
@@ -471,6 +505,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ListOps.Move(childComplexity, args["input"].(model.MoveList)), true
+
+	case "ListOps.update_name":
+		if e.complexity.ListOps.UpdateName == nil {
+			break
+		}
+
+		args, err := ec.field_ListOps_update_name_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ListOps.UpdateName(childComplexity, args["id"].(int), args["name"].(string)), true
 
 	case "Mutation.auth":
 		if e.complexity.Mutation.Auth == nil {
@@ -639,6 +685,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TeamOps.RemoveMember(childComplexity, args["input"].(model.NewTeamHasMember)), true
 
+	case "TeamOps.update_name":
+		if e.complexity.TeamOps.UpdateName == nil {
+			break
+		}
+
+		args, err := ec.field_TeamOps_update_name_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.TeamOps.UpdateName(childComplexity, args["id"].(int), args["name"].(string)), true
+
 	case "User.avatar":
 		if e.complexity.User.Avatar == nil {
 			break
@@ -711,6 +769,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UserOps.EditName(childComplexity, args["name"].(string)), true
+
+	case "UserOps.edit_password":
+		if e.complexity.UserOps.EditPassword == nil {
+			break
+		}
+
+		args, err := ec.field_UserOps_edit_password_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.UserOps.EditPassword(childComplexity, args["new_password"].(string)), true
 
 	}
 	return 0, false
@@ -801,6 +871,7 @@ input NewBoard {
 
 type BoardOps {
     create(input: NewBoard!): Board! @goField(forceResolver: true) @isLogin
+    update_name(id: ID!, name: String!): String! @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
 	{Name: "graph/list.graphql", Input: `type List {
     id: ID!
@@ -827,6 +898,7 @@ input MoveList {
 type ListOps {
     create(input: NewList!): List! @goField(forceResolver: true)
     move(input: MoveList!): [List!]! @goField(forceResolver: true)
+    update_name(id: ID!, name: String!): String! @goField(forceResolver: true)
 }`, BuiltIn: false},
 	{Name: "graph/list_item.graphql", Input: `type ListItem {
     id: ID!
@@ -854,6 +926,7 @@ input MoveListItem {
 type ListItemOps {
     create(input: NewListItem!): ListItem! @goField(forceResolver: true) @isLogin
     move(input: MoveListItem!): Map! @goField(forceResolver: true) @isLogin
+    update_name(id: ID!, name: String!): String! @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
 	{Name: "graph/schema.graphql", Input: `# GraphQL schema example
 #
@@ -889,7 +962,8 @@ type Mutation {
 }
 
 type TeamOps {
-    create(name: String!): Team! @goField(forceResolver: true) @goField(forceResolver: true) @isLogin
+    create(name: String!): Team! @goField(forceResolver: true) @isLogin
+    update_name(id: ID!, name: String!): Team! @goField(forceResolver: true) @isLogin
     add_member(input: NewTeamHasMember!): TeamHasMember! @goField(forceResolver: true) @isLogin
     remove_member(input: NewTeamHasMember!): String! @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
@@ -924,6 +998,7 @@ input NewUser {
 type UserOps {
     edit_name(name: String!): String! @goField(forceResolver: true) @isLogin
     edit_avatar(image: Upload): String @goField(forceResolver: true) @isLogin
+    edit_password(new_password: String!): String! @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -986,6 +1061,30 @@ func (ec *executionContext) field_BoardOps_create_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_BoardOps_update_name_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_ListItemOps_create_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1016,6 +1115,30 @@ func (ec *executionContext) field_ListItemOps_move_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_ListItemOps_update_name_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_ListOps_create_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1043,6 +1166,30 @@ func (ec *executionContext) field_ListOps_move_args(ctx context.Context, rawArgs
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_ListOps_update_name_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg1
 	return args, nil
 }
 
@@ -1121,6 +1268,30 @@ func (ec *executionContext) field_TeamOps_remove_member_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_TeamOps_update_name_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_UserOps_edit_avatar_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1148,6 +1319,21 @@ func (ec *executionContext) field_UserOps_edit_name_args(ctx context.Context, ra
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_UserOps_edit_password_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["new_password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["new_password"] = arg0
 	return args, nil
 }
 
@@ -1540,6 +1726,68 @@ func (ec *executionContext) _BoardOps_create(ctx context.Context, field graphql.
 	res := resTmp.(*model.Board)
 	fc.Result = res
 	return ec.marshalNBoard2ᚖmyappᚋgraphᚋmodelᚐBoard(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BoardOps_update_name(ctx context.Context, field graphql.CollectedField, obj *model.BoardOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BoardOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_BoardOps_update_name_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.BoardOps().UpdateName(rctx, obj, args["id"].(int), args["name"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLogin == nil {
+				return nil, errors.New("directive isLogin is not implemented")
+			}
+			return ec.directives.IsLogin(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _JwtToken_type(ctx context.Context, field graphql.CollectedField, obj *model.JwtToken) (ret graphql.Marshaler) {
@@ -2243,6 +2491,68 @@ func (ec *executionContext) _ListItemOps_move(ctx context.Context, field graphql
 	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ListItemOps_update_name(ctx context.Context, field graphql.CollectedField, obj *model.ListItemOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ListItemOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ListItemOps_update_name_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.ListItemOps().UpdateName(rctx, obj, args["id"].(int), args["name"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLogin == nil {
+				return nil, errors.New("directive isLogin is not implemented")
+			}
+			return ec.directives.IsLogin(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ListOps_create(ctx context.Context, field graphql.CollectedField, obj *model.ListOps) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2325,6 +2635,48 @@ func (ec *executionContext) _ListOps_move(ctx context.Context, field graphql.Col
 	res := resTmp.([]*model.List)
 	fc.Result = res
 	return ec.marshalNList2ᚕᚖmyappᚋgraphᚋmodelᚐListᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ListOps_update_name(ctx context.Context, field graphql.CollectedField, obj *model.ListOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ListOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ListOps_update_name_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ListOps().UpdateName(rctx, obj, args["id"].(int), args["name"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_auth(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3134,6 +3486,68 @@ func (ec *executionContext) _TeamOps_create(ctx context.Context, field graphql.C
 	return ec.marshalNTeam2ᚖmyappᚋgraphᚋmodelᚐTeam(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _TeamOps_update_name(ctx context.Context, field graphql.CollectedField, obj *model.TeamOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TeamOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_TeamOps_update_name_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.TeamOps().UpdateName(rctx, obj, args["id"].(int), args["name"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLogin == nil {
+				return nil, errors.New("directive isLogin is not implemented")
+			}
+			return ec.directives.IsLogin(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Team); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *myapp/graph/model.Team`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Team)
+	fc.Result = res
+	return ec.marshalNTeam2ᚖmyappᚋgraphᚋmodelᚐTeam(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _TeamOps_add_member(ctx context.Context, field graphql.CollectedField, obj *model.TeamOps) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3616,6 +4030,68 @@ func (ec *executionContext) _UserOps_edit_avatar(ctx context.Context, field grap
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserOps_edit_password(ctx context.Context, field graphql.CollectedField, obj *model.UserOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_UserOps_edit_password_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.UserOps().EditPassword(rctx, obj, args["new_password"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLogin == nil {
+				return nil, errors.New("directive isLogin is not implemented")
+			}
+			return ec.directives.IsLogin(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -5090,6 +5566,20 @@ func (ec *executionContext) _BoardOps(ctx context.Context, sel ast.SelectionSet,
 				}
 				return res
 			})
+		case "update_name":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BoardOps_update_name(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5282,6 +5772,20 @@ func (ec *executionContext) _ListItemOps(ctx context.Context, sel ast.SelectionS
 				}
 				return res
 			})
+		case "update_name":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ListItemOps_update_name(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5327,6 +5831,20 @@ func (ec *executionContext) _ListOps(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._ListOps_move(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "update_name":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ListOps_update_name(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -5591,6 +6109,20 @@ func (ec *executionContext) _TeamOps(ctx context.Context, sel ast.SelectionSet, 
 				}
 				return res
 			})
+		case "update_name":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TeamOps_update_name(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "add_member":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5724,6 +6256,20 @@ func (ec *executionContext) _UserOps(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._UserOps_edit_avatar(ctx, field, obj)
+				return res
+			})
+		case "edit_password":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserOps_edit_password(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		default:

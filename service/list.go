@@ -307,3 +307,38 @@ func ListValidateMember(ctx context.Context, listID int) (bool, error) {
 	fmt.Println("Unhandled Data")
 	return false, gqlError("Unhandled Case", "code", "UNHANDLED_CASE")
 }
+
+//ListUpdateMultipleColumnsByID Update Multiple Columns
+func ListUpdateMultipleColumnsByID(ctx context.Context, id int, args []updateArgs) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	data := map[string]interface{}{
+		"updated_at": time.Now().UTC(),
+	}
+	for _, val := range args {
+		data[val.Key] = val.Value
+	}
+
+	if err := db.Table("list").Where("id = ?", id).Updates(data).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+//ListUpdateName Update Name
+func ListUpdateName(ctx context.Context, id int, name string) (string, error) {
+	if stringIsEmpty(name) {
+		return "Failed", gqlError("Invalid Name", "code", "INVALID_NAME")
+	}
+
+	var args []updateArgs
+	args = append(args, updateArgs{
+		Key:   "name",
+		Value: name,
+	})
+	return ListUpdateMultipleColumnsByID(ctx, id, args)
+}
