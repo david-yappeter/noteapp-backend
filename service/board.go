@@ -138,3 +138,26 @@ func BoardUpdateName(ctx context.Context, id int, name string) (string, error) {
 	})
 	return BoardUpdateMultipleColumnsByID(ctx, id, args)
 }
+
+//BoardGetByID By ID
+func BoardGetByID(ctx context.Context, id int) (*model.Board, error) {
+	if access, err := BoardValidateMember(ctx, id); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return nil, gqlError("(Not Member Of Team or Board doesn't exist", "code", "ACCESS_DENIED")
+	}
+
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var board model.Board
+	if err := db.Table("board").Where("id = ?", id).Take(&board).Error; err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &board, nil
+}

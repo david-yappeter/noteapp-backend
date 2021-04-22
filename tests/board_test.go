@@ -118,3 +118,21 @@ func (t *GormSuite) BoardUpdateName(ctx context.Context, id int, name string) (s
 	})
 	return t.BoardUpdateMultipleColumnsByID(ctx, id, args)
 }
+
+func (t *GormSuite) BoardGetByID(ctx context.Context, userID int, id int) (*model.Board, error) {
+	if access, err := t.BoardValidateMember(ctx, userID, id); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return nil, gqlError("(Not Member Of Team or Board doesn't exist", "code", "ACCESS_DENIED")
+	}
+
+	var board model.Board
+	if err := t.tr.Table("board").Where("id = ?", id).Take(&board).Error; err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &board, nil
+}

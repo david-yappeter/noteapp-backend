@@ -11,6 +11,7 @@ scalar Map
 type Query {
     me: User! @isLogin
     team(id: ID!): Team! @goField(forceResolver: true) @isLogin
+    board(id: ID!): Board! @goField(forceResolver: true) @isLogin
 }
 
 type Mutation {

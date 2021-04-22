@@ -42,6 +42,10 @@ func (r *queryResolver) Team(ctx context.Context, id int) (*model.Team, error) {
 	return service.TeamGetByIDAuthorize(ctx, id)
 }
 
+func (r *queryResolver) Board(ctx context.Context, id int) (*model.Board, error) {
+	return service.BoardGetByID(ctx, id)
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
