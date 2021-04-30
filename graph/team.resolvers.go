@@ -35,6 +35,10 @@ func (r *teamOpsResolver) RemoveMember(ctx context.Context, obj *model.TeamOps, 
 	return service.TeamRemoveMember(ctx, input)
 }
 
+func (r *teamOpsResolver) Delete(ctx context.Context, obj *model.TeamOps, id int) (string, error) {
+	return service.TeamDeleteByID(ctx, id)
+}
+
 // Team returns generated.TeamResolver implementation.
 func (r *Resolver) Team() generated.TeamResolver { return &teamResolver{r} }
 

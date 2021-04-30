@@ -157,3 +157,32 @@ func TeamUpdateName(ctx context.Context, id int, name string) (*model.Team, erro
 
 	return TeamGetByID(ctx, id)
 }
+
+//BoardDeleteByID Delete By ID
+func TeamDeleteByID(ctx context.Context, id int) (string, error) {
+	if access, err := TeamValidateMember(ctx, id); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+		return "Failed", gqlError("(Not Member Of Team or Team doesn't exist", "code", "ACCESS_DENIED")
+	}
+
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Exec(`
+    DELETE t.*, b.*, l.*, li.* 
+    FROM team as t
+    INNER JOIN board as b on b.team_id = t.id
+    INNER JOIN list as l on l.board_id = b.id
+    INNER JOIN list_item as li on li.list_id = l.id
+    WHERE t.id = ?;
+    `, id).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}

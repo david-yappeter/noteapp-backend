@@ -10,6 +10,7 @@ type AuthOps struct {
 type BoardOps struct {
 	Create     *Board `json:"create"`
 	UpdateName string `json:"update_name"`
+	Delete     string `json:"delete"`
 }
 
 type JwtToken struct {
@@ -21,12 +22,14 @@ type ListItemOps struct {
 	Create     *ListItem              `json:"create"`
 	Move       map[string]interface{} `json:"move"`
 	UpdateName string                 `json:"update_name"`
+	Delete     string                 `json:"delete"`
 }
 
 type ListOps struct {
 	Create     *List   `json:"create"`
 	Move       []*List `json:"move"`
 	UpdateName string  `json:"update_name"`
+	Delete     string  `json:"delete"`
 }
 
 type MoveList struct {
@@ -75,6 +78,7 @@ type TeamOps struct {
 	UpdateName   *Team          `json:"update_name"`
 	AddMember    *TeamHasMember `json:"add_member"`
 	RemoveMember string         `json:"remove_member"`
+	Delete       string         `json:"delete"`
 }
 
 type UserOps struct {

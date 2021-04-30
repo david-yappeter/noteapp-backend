@@ -342,3 +342,30 @@ func ListUpdateName(ctx context.Context, id int, name string) (string, error) {
 	})
 	return ListUpdateMultipleColumnsByID(ctx, id, args)
 }
+
+//ListDeleteByID Delete By ID
+func ListDeleteByID(ctx context.Context, id int) (string, error) {
+	if access, err := ListValidateMember(ctx, id); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+		return "Failed", gqlError("Not Member Of Team or List doesn't exist", "code", "ACCESS_DENIED")
+	}
+
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Exec(`
+    DELETE l.*, li.* 
+    FROM list as l
+    INNER JOIN list_item as li on li.list_id = l.id
+    WHERE l.id = ?;
+    `, id).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}

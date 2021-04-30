@@ -46,6 +46,11 @@ func (r *listItemOpsResolver) UpdateName(ctx context.Context, obj *model.ListIte
 	return service.ListItemUpdateName(ctx, id, name)
 }
 
+func (r *listItemOpsResolver) Delete(ctx context.Context, obj *model.ListItemOps, id int) (string, error) {
+	panic("not implemented")
+	// return service.ListItemDeleteByID(ctx, id)
+}
+
 // ListItemOps returns generated.ListItemOpsResolver implementation.
 func (r *Resolver) ListItemOps() generated.ListItemOpsResolver { return &listItemOpsResolver{r} }
 

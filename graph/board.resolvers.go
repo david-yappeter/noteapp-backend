@@ -23,6 +23,10 @@ func (r *boardOpsResolver) UpdateName(ctx context.Context, obj *model.BoardOps, 
 	return service.BoardUpdateName(ctx, id, name)
 }
 
+func (r *boardOpsResolver) Delete(ctx context.Context, obj *model.BoardOps, id int) (string, error) {
+	return service.BoardDeleteByID(ctx, id)
+}
+
 // Board returns generated.BoardResolver implementation.
 func (r *Resolver) Board() generated.BoardResolver { return &boardResolver{r} }
 

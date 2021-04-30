@@ -33,6 +33,10 @@ func (r *listOpsResolver) UpdateName(ctx context.Context, obj *model.ListOps, id
 	return service.ListUpdateName(ctx, id, name)
 }
 
+func (r *listOpsResolver) Delete(ctx context.Context, obj *model.ListOps, id int) (string, error) {
+	return service.ListDeleteByID(ctx, id)
+}
+
 // List returns generated.ListResolver implementation.
 func (r *Resolver) List() generated.ListResolver { return &listResolver{r} }
 

@@ -25,4 +25,5 @@ type ListItemOps {
     create(input: NewListItem!): ListItem! @goField(forceResolver: true) @isLogin
     move(input: MoveListItem!): Map! @goField(forceResolver: true) @isLogin
     update_name(id: ID!, name: String!): String! @goField(forceResolver: true) @isLogin
+    delete(id: ID!): String! @goField(forceResolver: true) @isLogin
 }

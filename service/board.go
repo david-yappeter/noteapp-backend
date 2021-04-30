@@ -161,3 +161,31 @@ func BoardGetByID(ctx context.Context, id int) (*model.Board, error) {
 
 	return &board, nil
 }
+
+//BoardDeleteByID Delete By ID
+func BoardDeleteByID(ctx context.Context, id int) (string, error) {
+	if access, err := BoardValidateMember(ctx, id); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+		return "Failed", gqlError("(Not Member Of Team or Board doesn't exist", "code", "ACCESS_DENIED")
+	}
+
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Exec(`
+    DELETE b.*, l.*, li.* 
+    FROM board as b
+    INNER JOIN list as l on l.board_id = b.id
+    INNER JOIN list_item as li on li.list_id = l.id
+    WHERE b.id = ?;
+    `, id).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}

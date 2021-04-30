@@ -113,6 +113,63 @@ func ListItemUpdatePointer(ctx context.Context, id int, next *int, prev *int) (s
 	return "Success", nil
 }
 
+//ListItemUpdatePointerValue Update Pointer Value (Ignore Null)
+func ListItemUpdatePointerValue(ctx context.Context, id int, next *int, prev *int) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	data := map[string]interface{}{
+		"updated_at": time.Now().UTC(),
+	}
+
+	if next != nil {
+		data["next"] = next
+	}
+	if prev != nil {
+		data["prev"] = prev
+	}
+
+	if err := db.Table("list_item").Where("id = ?", id).Updates(data).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+func ListItemUpdatePointerNull(ctx context.Context, id int, next bool, prev bool) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	data := map[string]interface{}{
+		"updated_at": time.Now().UTC(),
+	}
+
+	if next {
+		data["next"] = nil
+	}
+	if prev {
+		data["prev"] = nil
+	}
+
+	if err := db.Table("list_item").Where("id = ?", id).Updates(data).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+func ListItemUpdatePointerNextNull(ctx context.Context, id int) (string, error) {
+	return ListItemUpdatePointerNull(ctx, id, true, false)
+}
+
+func ListItemUpdatePointerPrevNull(ctx context.Context, id int) (string, error) {
+	return ListItemUpdatePointerNull(ctx, id, false, true)
+}
+
 //ListItemGetByID Get By ID
 func ListItemGetByID(ctx context.Context, id int) (*model.ListItem, error) {
 	db := config.ConnectGorm()
@@ -322,3 +379,99 @@ func ListItemUpdateName(ctx context.Context, id int, name string) (string, error
 	})
 	return ListItemUpdateMultipleColumnsByID(ctx, id, args)
 }
+
+func ListItemValidateMember(ctx context.Context, listItemID int) (bool, error) {
+	user := ForContext(ctx)
+	if user == nil {
+		fmt.Println("Not Logged In!")
+		return false, gqlError("Not Logged In!", "code", "NOT_LOGGED_IN")
+	}
+
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var count int64
+
+	if err := db.Table("list_item").Joins(
+		"INNER JOIN list on list_item.list_id = list.id",
+	).Joins(
+		"INNER JOIN board on list.board_id = board.id",
+	).Joins(
+		"INNER JOIN team on board.team_id = team.id",
+	).Joins(
+		"INNER JOIN team_has_member on team_has_member.team_id = team.id",
+	).Where("list_item.id = ? and team_has_member.user_id = ?", listItemID, user.ID).Count(&count).Error; err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	if count == 0 {
+		return false, nil
+	} else if count == 1 {
+		return true, nil
+	}
+
+	fmt.Println("Unhandled Data")
+	return false, gqlError("Unhandled Case", "code", "UNHANDLED_CASE")
+}
+
+func ListItemDeleteByID(ctx context.Context, id int) (string, error) {
+	if access, err := ListItemValidateMember(ctx, id); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+		return "Failed", gqlError("Not Member Of Team or List Item doesn't exist", "code", "ACCESS_DENIED")
+	}
+
+	getListItem, err := ListItemGetByID(ctx, id)
+	if err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	if getListItem.Next == nil && getListItem.Prev == nil {
+	} else if getListItem.Next != nil && getListItem.Prev != nil {
+		if _, err = ListItemUpdatePointerValue(ctx, id, getListItem.Next, getListItem.Prev); err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+	} else {
+		var err error
+		if getListItem.Next != nil {
+			_, err = ListItemUpdatePointerPrevNull(ctx, *getListItem.Next)
+		} else {
+			_, err = ListItemUpdatePointerNextNull(ctx, *getListItem.Prev)
+		}
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+	}
+
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Table("list_item").Where("id = ?", id).Delete(&model.ListItem{}).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+// func ListItemGetByIds(ctx context.Context, ids []*int) ([]*model.ListItem, error) {
+// 	db := config.ConnectGorm()
+// 	sqlDB, _ := db.DB()
+// 	defer sqlDB.Close()
+
+// 	var listItems []*model.ListItem
+// 	if err := db.Table("list_item").Where("id IN (?)", ids).Find(&listItems).Error; err != nil {
+// 		fmt.Println(err)
+// 		return nil, err
+// 	}
+
+// 	return listItems, nil
+// }
