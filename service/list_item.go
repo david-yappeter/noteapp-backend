@@ -433,7 +433,11 @@ func ListItemDeleteByID(ctx context.Context, id int) (string, error) {
 
 	if getListItem.Next == nil && getListItem.Prev == nil {
 	} else if getListItem.Next != nil && getListItem.Prev != nil {
-		if _, err = ListItemUpdatePointerValue(ctx, id, getListItem.Next, getListItem.Prev); err != nil {
+		if _, err = ListItemUpdatePointerValue(ctx, *getListItem.Next, nil, getListItem.Prev); err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+		if _, err = ListItemUpdatePointerValue(ctx, *getListItem.Prev, getListItem.Next, nil); err != nil {
 			fmt.Println(err)
 			return "Failed", err
 		}
@@ -475,3 +479,30 @@ func ListItemDeleteByID(ctx context.Context, id int) (string, error) {
 
 // 	return listItems, nil
 // }
+
+//ListItemDeleteByBoardID Delete By Board ID
+func ListItemDeleteByBoardID(ctx context.Context, boardID int) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Exec("DELETE li.* FROM list_item as li INNER JOIN list as l on li.list_id = l.id INNER JOIN board as b on b.id = l.board_id WHERE b.id = ?", boardID).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+func ListItemDeleteByListID(ctx context.Context, listID int) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Exec("DELETE li.* FROM list_item as li INNER JOIN list as l on li.list_id = l.id WHERE l.id = ?", listID).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}

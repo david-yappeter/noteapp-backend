@@ -353,16 +353,28 @@ func ListDeleteByID(ctx context.Context, id int) (string, error) {
 		return "Failed", gqlError("Not Member Of Team or List doesn't exist", "code", "ACCESS_DENIED")
 	}
 
+	if resp, err := ListItemDeleteByListID(ctx, id); err != nil {
+		return resp, err
+	}
+
 	db := config.ConnectGorm()
 	sqlDB, _ := db.DB()
 	defer sqlDB.Close()
 
-	if err := db.Exec(`
-    DELETE l.*, li.* 
-    FROM list as l
-    INNER JOIN list_item as li on li.list_id = l.id
-    WHERE l.id = ?;
-    `, id).Error; err != nil {
+	if err := db.Table("list").Where("id = ?", id).Delete(&model.List{}).Error; err != nil {
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
+//ListDeleteByBoardID Delete By BoardID
+func ListDeleteByBoardID(ctx context.Context, boardID int) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	if err := db.Exec("DELETE l.* FROM list as l INNER JOIN board as b on b.id = l.board_id WHERE b.id = ?", boardID).Error; err != nil {
 		fmt.Println(err)
 		return "Failed", err
 	}
