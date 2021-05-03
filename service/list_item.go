@@ -369,11 +369,6 @@ func ListItemMovePlace(ctx context.Context, input model.MoveListItem) (string, e
 
 	getListItemByList := getListItemByListDataloader[0]
 
-	fmt.Println("List Item By ListID")
-	for _, val := range getListItemByList {
-		fmt.Printf("%+v\n", val)
-	}
-
 	lens := len(getListItemByList)
 
 	if input.DestinationIndex == 0 {

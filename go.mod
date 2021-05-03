@@ -1,3 +1,4 @@
+// +heroku goVersion go1.16
 module myapp
 
 go 1.16
@@ -14,7 +15,8 @@ require (
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
 	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78
 	google.golang.org/api v0.44.0
-	google.golang.org/grpc v1.36.1
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gorm.io/driver/mysql v1.0.4
+	gorm.io/driver/postgres v1.0.8
 	gorm.io/gorm v1.20.12
 )

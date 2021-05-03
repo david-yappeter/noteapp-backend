@@ -1,8 +1,8 @@
 database:
     type:
         # Only The First One Will Be Applied
-        - mysql
         - postgre
+        - mysql
     path: ./config
     name: databaseGorm
     apply: true
@@ -18,7 +18,7 @@ database:
             - Warn
             - Error
         slowThreshold: 1
-        apply: true
+        apply: false
 service:
     from:
         path: ./gormgenerator
@@ -33,4 +33,4 @@ service:
 queryTools:
     path: ./tools
     name: dbGenerator
-    apply: true
+    apply: false

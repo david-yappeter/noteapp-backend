@@ -308,7 +308,7 @@ func UserDataloaderBatchByTeamIds(ctx context.Context, teamIds []int) ([][]*mode
 		TeamID    int        `json:"team_id"`
 	}
 
-	if err := db.Table("user").Select("user.*, team_has_member.team_id AS team_id").Joins("INNER JOIN team_has_member on user.id = team_has_member.user_id").Where("team_has_member.team_id IN (?)", teamIds).Find(&tempModel).Error; err != nil {
+	if err := db.Table("user").Select(`"user".*, team_has_member.team_id AS team_id`).Joins(`INNER JOIN team_has_member on "user".id = team_has_member.user_id`).Where(`team_has_member.team_id IN (?)`, teamIds).Find(&tempModel).Error; err != nil {
 		fmt.Println(err)
 		return nil, []error{err}
 	}
