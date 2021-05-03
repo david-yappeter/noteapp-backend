@@ -189,7 +189,7 @@ type ListResolver interface {
 }
 type ListItemOpsResolver interface {
 	Create(ctx context.Context, obj *model.ListItemOps, input model.NewListItem) (*model.ListItem, error)
-	Move(ctx context.Context, obj *model.ListItemOps, input model.MoveListItem) (map[string]interface{}, error)
+	Move(ctx context.Context, obj *model.ListItemOps, input model.MoveListItem) (string, error)
 	UpdateName(ctx context.Context, obj *model.ListItemOps, id int, name string) (string, error)
 	Delete(ctx context.Context, obj *model.ListItemOps, id int) (string, error)
 }
@@ -977,7 +977,7 @@ type ListOps {
     name: String!
     created_at: Time!
     updated_at: Time
-    list_id: ID!
+    list_id: ID
     next: ID
     prev: ID
 }
@@ -989,15 +989,13 @@ input NewListItem {
 
 input MoveListItem {
     id: ID!
-    move_before_id: ID
-    move_after_id: ID
-    move_before_list_id: ID!
-    move_after_list_id: ID!
+    destination_list_id: ID!
+    destination_index: ID!
 }
 
 type ListItemOps {
     create(input: NewListItem!): ListItem! @goField(forceResolver: true) @isLogin
-    move(input: MoveListItem!): Map! @goField(forceResolver: true) @isLogin
+    move(input: MoveListItem!): String! @goField(forceResolver: true) @isLogin
     update_name(id: ID!, name: String!): String! @goField(forceResolver: true) @isLogin
     delete(id: ID!): String! @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
@@ -2505,14 +2503,11 @@ func (ec *executionContext) _ListItem_list_id(ctx context.Context, field graphql
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*int)
 	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
+	return ec.marshalOID2ᚖint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ListItem_next(ctx context.Context, field graphql.CollectedField, obj *model.ListItem) (ret graphql.Marshaler) {
@@ -2683,10 +2678,10 @@ func (ec *executionContext) _ListItemOps_move(ctx context.Context, field graphql
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(map[string]interface{}); ok {
+		if data, ok := tmp.(string); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be map[string]interface{}`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2698,9 +2693,9 @@ func (ec *executionContext) _ListItemOps_move(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(map[string]interface{})
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNMap2map(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ListItemOps_update_name(ctx context.Context, field graphql.CollectedField, obj *model.ListItemOps) (ret graphql.Marshaler) {
@@ -5691,35 +5686,19 @@ func (ec *executionContext) unmarshalInputMoveListItem(ctx context.Context, obj 
 			if err != nil {
 				return it, err
 			}
-		case "move_before_id":
+		case "destination_list_id":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("move_before_id"))
-			it.MoveBeforeID, err = ec.unmarshalOID2ᚖint(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destination_list_id"))
+			it.DestinationListID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "move_after_id":
+		case "destination_index":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("move_after_id"))
-			it.MoveAfterID, err = ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "move_before_list_id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("move_before_list_id"))
-			it.MoveBeforeListID, err = ec.unmarshalNID2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "move_after_list_id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("move_after_list_id"))
-			it.MoveAfterListID, err = ec.unmarshalNID2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destination_index"))
+			it.DestinationIndex, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6189,9 +6168,6 @@ func (ec *executionContext) _ListItem(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._ListItem_updated_at(ctx, field, obj)
 		case "list_id":
 			out.Values[i] = ec._ListItem_list_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "next":
 			out.Values[i] = ec._ListItem_next(ctx, field, obj)
 		case "prev":
@@ -7309,27 +7285,6 @@ func (ec *executionContext) marshalNListOps2ᚖmyappᚋgraphᚋmodelᚐListOps(c
 		return graphql.Null
 	}
 	return ec._ListOps(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
-	res, err := graphql.UnmarshalMap(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := graphql.MarshalMap(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
 }
 
 func (ec *executionContext) unmarshalNMoveList2myappᚋgraphᚋmodelᚐMoveList(ctx context.Context, v interface{}) (model.MoveList, error) {

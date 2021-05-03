@@ -19,10 +19,10 @@ type JwtToken struct {
 }
 
 type ListItemOps struct {
-	Create     *ListItem              `json:"create"`
-	Move       map[string]interface{} `json:"move"`
-	UpdateName string                 `json:"update_name"`
-	Delete     string                 `json:"delete"`
+	Create     *ListItem `json:"create"`
+	Move       string    `json:"move"`
+	UpdateName string    `json:"update_name"`
+	Delete     string    `json:"delete"`
 }
 
 type ListOps struct {
@@ -39,11 +39,9 @@ type MoveList struct {
 }
 
 type MoveListItem struct {
-	ID               int  `json:"id"`
-	MoveBeforeID     *int `json:"move_before_id"`
-	MoveAfterID      *int `json:"move_after_id"`
-	MoveBeforeListID int  `json:"move_before_list_id"`
-	MoveAfterListID  int  `json:"move_after_list_id"`
+	ID                int `json:"id"`
+	DestinationListID int `json:"destination_list_id"`
+	DestinationIndex  int `json:"destination_index"`
 }
 
 type NewBoard struct {

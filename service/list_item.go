@@ -18,7 +18,7 @@ func ListItemCreate(ctx context.Context, input model.NewListItem, prev *int) (*m
 
 	listItem := model.ListItem{
 		Name:      input.Name,
-		ListID:    input.ListID,
+		ListID:    &input.ListID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: nil,
 		Next:      nil,
@@ -113,6 +113,27 @@ func ListItemUpdatePointer(ctx context.Context, id int, next *int, prev *int) (s
 	return "Success", nil
 }
 
+//ListItemUpdatePointer Update Pointer
+func ListItemUpdatePointerAndListID(ctx context.Context, id int, listID int, next *int, prev *int) (string, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	data := map[string]interface{}{
+		"updated_at": time.Now().UTC(),
+		"list_id":    listID,
+		"next":       next,
+		"prev":       prev,
+	}
+
+	if err := db.Table("list_item").Where("id = ?", id).Updates(data).Error; err != nil {
+		fmt.Println(err)
+		return "Failed", err
+	}
+
+	return "Success", nil
+}
+
 //ListItemUpdatePointerValue Update Pointer Value (Ignore Null)
 func ListItemUpdatePointerValue(ctx context.Context, id int, next *int, prev *int) (string, error) {
 	db := config.ConnectGorm()
@@ -138,7 +159,7 @@ func ListItemUpdatePointerValue(ctx context.Context, id int, next *int, prev *in
 	return "Success", nil
 }
 
-func ListItemUpdatePointerNull(ctx context.Context, id int, next bool, prev bool) (string, error) {
+func ListItemUpdatePointerNull(ctx context.Context, id int, next bool, prev bool, listID bool) (string, error) {
 	db := config.ConnectGorm()
 	sqlDB, _ := db.DB()
 	defer sqlDB.Close()
@@ -153,6 +174,9 @@ func ListItemUpdatePointerNull(ctx context.Context, id int, next bool, prev bool
 	if prev {
 		data["prev"] = nil
 	}
+	if listID {
+		data["list_id"] = nil
+	}
 
 	if err := db.Table("list_item").Where("id = ?", id).Updates(data).Error; err != nil {
 		fmt.Println(err)
@@ -163,11 +187,11 @@ func ListItemUpdatePointerNull(ctx context.Context, id int, next bool, prev bool
 }
 
 func ListItemUpdatePointerNextNull(ctx context.Context, id int) (string, error) {
-	return ListItemUpdatePointerNull(ctx, id, true, false)
+	return ListItemUpdatePointerNull(ctx, id, true, false, false)
 }
 
 func ListItemUpdatePointerPrevNull(ctx context.Context, id int) (string, error) {
-	return ListItemUpdatePointerNull(ctx, id, false, true)
+	return ListItemUpdatePointerNull(ctx, id, false, true, false)
 }
 
 //ListItemGetByID Get By ID
@@ -197,9 +221,9 @@ func ListItemDataloaderBatchByListIds(ctx context.Context, listIds []int) ([][]*
 	if len(listItems) > 0 {
 		for _, val := range listItems {
 			if val.Prev == nil {
-				itemById[val.ListID] = append([]*model.ListItem{val}, itemById[val.ListID]...)
+				itemById[*val.ListID] = append([]*model.ListItem{val}, itemById[*val.ListID]...)
 			} else {
-				itemById[val.ListID] = append(itemById[val.ListID], val)
+				itemById[*val.ListID] = append(itemById[*val.ListID], val)
 			}
 		}
 
@@ -212,6 +236,7 @@ func ListItemDataloaderBatchByListIds(ctx context.Context, listIds []int) ([][]*
 				listItemMapping[val.ID] = val
 			}
 
+			index := 0
 			var sortedListItem []*model.ListItem
 			for {
 				sortedListItem = append(sortedListItem, itemHead)
@@ -219,6 +244,10 @@ func ListItemDataloaderBatchByListIds(ctx context.Context, listIds []int) ([][]*
 					break
 				}
 				itemHead = listItemMapping[*itemHead.Next]
+				index++
+				if index > 200 {
+					panic("stop")
+				}
 			}
 
 			tempItemById[key] = sortedListItem
@@ -260,7 +289,7 @@ func ListItemMapGetByListIds(ctx context.Context, listIds []int) (map[int][]*mod
 
 	var mappedObject = map[int][]*model.ListItem{}
 	for _, val := range listItems {
-		mappedObject[val.ListID] = append(mappedObject[val.ListID], val)
+		mappedObject[*val.ListID] = append(mappedObject[*val.ListID], val)
 	}
 
 	return mappedObject, nil
@@ -268,82 +297,149 @@ func ListItemMapGetByListIds(ctx context.Context, listIds []int) (map[int][]*mod
 
 //ListItemMovePlace Move PLace
 func ListItemMovePlace(ctx context.Context, input model.MoveListItem) (string, error) {
+	if access, err := ListItemValidateMember(ctx, input.ID); err != nil || !access {
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+		return "Failed", gqlError("Not Member Of Team or List Item doesn't exist", "code", "ACCESS_DENIED")
+	}
+
 	getListItem, err := ListItemGetByID(ctx, input.ID)
 	if err != nil {
 		fmt.Println(err)
 		return "Failed", err
 	}
 
-	if getListItem.Prev == input.MoveBeforeID && getListItem.Next == input.MoveAfterID && getListItem.ListID == input.MoveBeforeListID && getListItem.ListID == input.MoveAfterListID {
-		return "No Changes", nil
-	}
+	// fmt.Println("Before", input.DestinationIndex)
 
-	var updateMap = map[int][]*int{}
-	if getListItem.Prev != nil {
-		empty := 0
-		updateMap[*getListItem.Prev] = []*int{&empty, getListItem.Next}
-	}
-	if getListItem.Next != nil {
-		empty := 0
-		updateMap[*getListItem.Next] = []*int{getListItem.Prev, &empty}
-	}
+	// if *getListItem.ListID == input.DestinationListID {
+	// 	getListItemByList, err := ListItemGetByListIds(ctx, []int{input.DestinationListID})
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		return "Failed", err
+	// 	}
+	// 	var index int
+	// 	for key, val := range getListItemByList {
+	// 		if *val == *getListItem {
+	// 			index = key
+	// 		}
+	// 	}
 
-	updateMap[getListItem.ID] = []*int{input.MoveBeforeID, input.MoveAfterID, &input.MoveAfterListID}
+	// 	if index < input.DestinationIndex {
+	// 		input.DestinationIndex--
+	// 	}
+	// }
 
-	if input.MoveBeforeID != nil {
-		if len(updateMap[*input.MoveBeforeID]) == 2 {
-			updateMap[*input.MoveBeforeID][1] = &getListItem.ID
-		} else {
-			empty := 0
-			updateMap[*input.MoveBeforeID] = []*int{&empty, &getListItem.ID}
-		}
-	}
-	if input.MoveAfterID != nil {
-		if len(updateMap[*input.MoveAfterID]) == 2 {
-			updateMap[*input.MoveAfterID][0] = &getListItem.ID
-		} else {
-			empty := 0
-			updateMap[*input.MoveAfterID] = []*int{&getListItem.ID, &empty}
-		}
-	}
+	// fmt.Println("After", input.DestinationIndex)
 
-	if _, err := ListItemUpdateMove(ctx, updateMap); err != nil {
-		fmt.Println(err)
-		return "Failed", err
-	}
-
-	return "Success", nil
-}
-
-//ListItemUpdateMove Update Move
-func ListItemUpdateMove(ctx context.Context, input map[int][]*int) (string, error) {
-	db := config.ConnectGorm()
-	sqlDB, _ := db.DB()
-	defer sqlDB.Close()
-
-	for key, val := range input {
-		data := map[string]interface{}{
-			"updated_at": time.Now().UTC(),
-		}
-		if !(val[0] != nil && *val[0] == 0) {
-			data["prev"] = val[0]
-		}
-		if !(val[1] != nil && *val[1] == 0) {
-			data["next"] = val[1]
-		}
-		if len(val) == 3 {
-			data["list_id"] = val[2]
-		}
-
-		if err := db.Table("list_item").Where("id = ?", key).Updates(data).Error; err != nil {
+	if getListItem.Next == nil && getListItem.Prev == nil {
+	} else if getListItem.Next != nil && getListItem.Prev != nil {
+		if _, err = ListItemUpdatePointerValue(ctx, *getListItem.Next, nil, getListItem.Prev); err != nil {
 			fmt.Println(err)
 			return "Failed", err
 		}
+		if _, err = ListItemUpdatePointerValue(ctx, *getListItem.Prev, getListItem.Next, nil); err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+	} else {
+		var err error
+		if getListItem.Next != nil {
+			_, err = ListItemUpdatePointerPrevNull(ctx, *getListItem.Next)
+		} else {
+			_, err = ListItemUpdatePointerNextNull(ctx, *getListItem.Prev)
+		}
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+	}
 
+	if resp, err := ListItemUpdatePointerNull(ctx, input.ID, true, true, true); err != nil {
+		return resp, err
+	}
+
+	var errBatch []error
+	getListItemByListDataloader, errBatch := ListItemDataloaderBatchByListIds(ctx, []int{input.DestinationListID})
+	if len(errBatch) > 0 && errBatch[0] != nil {
+		fmt.Println(errBatch[0])
+		return "Failed", errBatch[0]
+	}
+
+	getListItemByList := getListItemByListDataloader[0]
+
+	fmt.Println("List Item By ListID")
+	for _, val := range getListItemByList {
+		fmt.Printf("%+v\n", val)
+	}
+
+	lens := len(getListItemByList)
+
+	if input.DestinationIndex == 0 {
+		if lens == 0 {
+			if resp, err := ListItemUpdatePointerAndListID(ctx, input.ID, input.DestinationListID, nil, nil); err != nil {
+				return resp, err
+			}
+		} else {
+			if resp, err := ListItemUpdatePointerValue(ctx, getListItemByList[0].ID, nil, &input.ID); err != nil {
+				return resp, err
+			}
+			if resp, err := ListItemUpdatePointerAndListID(ctx, input.ID, input.DestinationListID, &getListItemByList[0].ID, nil); err != nil {
+				return resp, err
+			}
+		}
+	} else if input.DestinationIndex >= lens {
+		if resp, err := ListItemUpdatePointerValue(ctx, getListItemByList[lens-1].ID, &input.ID, nil); err != nil {
+			return resp, err
+		}
+		if resp, err := ListItemUpdatePointerAndListID(ctx, input.ID, input.DestinationListID, nil, &getListItemByList[lens-1].ID); err != nil {
+			return resp, err
+		}
+	} else {
+		if resp, err := ListItemUpdatePointerValue(ctx, getListItemByList[input.DestinationIndex-1].ID, &input.ID, nil); err != nil {
+			return resp, err
+		}
+		if resp, err := ListItemUpdatePointerValue(ctx, getListItemByList[input.DestinationIndex].ID, nil, &input.ID); err != nil {
+			return resp, err
+		}
+		if resp, err := ListItemUpdatePointerAndListID(ctx, input.ID, input.DestinationListID, &getListItemByList[input.DestinationIndex].ID, &getListItemByList[input.DestinationIndex-1].ID); err != nil {
+			return resp, err
+		}
 	}
 
 	return "Success", nil
 }
+
+// //ListItemUpdateMove Update Move
+// func ListItemUpdateMove(ctx context.Context, input map[int][]*int) (string, error) {
+// 	db := config.ConnectGorm()
+// 	sqlDB, _ := db.DB()
+// 	defer sqlDB.Close()
+
+// 	for key, val := range input {
+// 		data := map[string]interface{}{
+// 			"updated_at": time.Now().UTC(),
+// 		}
+// 		if !(val[0] != nil && *val[0] == 0) {
+// 			data["prev"] = val[0]
+// 		}
+// 		if !(val[1] != nil && *val[1] == 0) {
+// 			data["next"] = val[1]
+// 		}
+// 		if len(val) == 3 {
+// 			data["list_id"] = val[2]
+// 		}
+
+// 		if err := db.Table("list_item").Where("id = ?", key).Updates(data).Error; err != nil {
+// 			fmt.Println(err)
+// 			return "Failed", err
+// 		}
+
+// 	}
+
+// 	return "Success", nil
+// }
 
 //ListUpdateMultipleColumnsByID Update Multiple Columns
 func ListItemUpdateMultipleColumnsByID(ctx context.Context, id int, args []updateArgs) (string, error) {
