@@ -31,6 +31,10 @@ func (r *teamOpsResolver) AddMember(ctx context.Context, obj *model.TeamOps, inp
 	return service.TeamAddMember(ctx, input)
 }
 
+func (r *teamOpsResolver) AddMemberByEmail(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMemberByEmail) (*model.TeamHasMember, error) {
+	return service.TeamAddMemberByEmail(ctx, input)
+}
+
 func (r *teamOpsResolver) RemoveMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (string, error) {
 	return service.TeamRemoveMember(ctx, input)
 }

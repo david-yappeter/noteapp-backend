@@ -64,6 +64,11 @@ type NewTeamHasMember struct {
 	UserID int `json:"user_id"`
 }
 
+type NewTeamHasMemberByEmail struct {
+	TeamID int    `json:"team_id"`
+	Email  string `json:"email"`
+}
+
 type NewUser struct {
 	Name            string `json:"name"`
 	Email           string `json:"email"`
@@ -72,11 +77,12 @@ type NewUser struct {
 }
 
 type TeamOps struct {
-	Create       *Team          `json:"create"`
-	UpdateName   *Team          `json:"update_name"`
-	AddMember    *TeamHasMember `json:"add_member"`
-	RemoveMember string         `json:"remove_member"`
-	Delete       string         `json:"delete"`
+	Create           *Team          `json:"create"`
+	UpdateName       *Team          `json:"update_name"`
+	AddMember        *TeamHasMember `json:"add_member"`
+	AddMemberByEmail *TeamHasMember `json:"add_member_by_email"`
+	RemoveMember     string         `json:"remove_member"`
+	Delete           string         `json:"delete"`
 }
 
 type UserOps struct {

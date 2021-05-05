@@ -176,6 +176,9 @@ func UploadFileBatch(ctx context.Context, userUploadFile []*graphql.Upload) ([]s
 
 			// Step 2. Get the Google Drive service
 			service, err := getService()
+			if err != nil {
+				panic(err)
+			}
 
 			file, err := createFile(service, val.Filename, val.ContentType, f, os.Getenv("GDRIVE_FOLDER_ID"))
 

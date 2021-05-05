@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"myapp/config"
 	"myapp/graph/model"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -49,6 +50,54 @@ func TeamAddMember(ctx context.Context, input model.NewTeamHasMember) (*model.Te
 	}
 
 	return TeamHasMemberCreate(ctx, input)
+}
+
+func TeamAddMemberByEmail(ctx context.Context, input model.NewTeamHasMemberByEmail) (*model.TeamHasMember, error) {
+	if access, err := TeamValidateMember(ctx, input.TeamID); err != nil || !access {
+		if err != nil {
+			return nil, err
+		}
+		return nil, gqlError("Access Denied! (Not Member Of Team)", "code", "ACCESS_DENIED")
+	}
+
+	if getTeamHasMember, err := TeamHasMemberGetByTeamIDAndEmail(ctx, input.TeamID, input.Email); err != nil || getTeamHasMember != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		if getTeamHasMember != nil {
+			return nil, gqlError("Already Part of Team Member", "code", "NOTHING_CHANGED")
+		}
+	}
+
+	user, err := UserGetByEmail(ctx, input.Email)
+	if err != nil {
+		fmt.Println(err)
+		if err == gorm.ErrRecordNotFound {
+			return nil, gqlError("Email Not Found", "code", "EMAIL_NOT_FOUND")
+		}
+		return nil, err
+	}
+
+	return TeamHasMemberCreate(ctx, model.NewTeamHasMember{
+		TeamID: input.TeamID,
+		UserID: user.ID,
+	})
+}
+
+func TeamHasMemberGetByTeamIDAndEmail(ctx context.Context, teamID int, email string) (*model.TeamHasMember, error) {
+	db := config.ConnectGorm()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	var teamHasMember model.TeamHasMember
+	if err := db.Table("team_has_member").Select("team_has_member.*").Joins(`INNER JOIN "user" on "user".id = team_has_member.user_id`).Where(`"user".email = ?`, strings.ToLower(email)).Take(&teamHasMember).Error; err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &teamHasMember, nil
 }
 
 //TeamRemoveMember Remove Member

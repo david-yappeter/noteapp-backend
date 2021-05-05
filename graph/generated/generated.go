@@ -148,11 +148,12 @@ type ComplexityRoot struct {
 	}
 
 	TeamOps struct {
-		AddMember    func(childComplexity int, input model.NewTeamHasMember) int
-		Create       func(childComplexity int, name string) int
-		Delete       func(childComplexity int, id int) int
-		RemoveMember func(childComplexity int, input model.NewTeamHasMember) int
-		UpdateName   func(childComplexity int, id int, name string) int
+		AddMember        func(childComplexity int, input model.NewTeamHasMember) int
+		AddMemberByEmail func(childComplexity int, input model.NewTeamHasMemberByEmail) int
+		Create           func(childComplexity int, name string) int
+		Delete           func(childComplexity int, id int) int
+		RemoveMember     func(childComplexity int, input model.NewTeamHasMember) int
+		UpdateName       func(childComplexity int, id int, name string) int
 	}
 
 	User struct {
@@ -220,6 +221,7 @@ type TeamOpsResolver interface {
 	Create(ctx context.Context, obj *model.TeamOps, name string) (*model.Team, error)
 	UpdateName(ctx context.Context, obj *model.TeamOps, id int, name string) (*model.Team, error)
 	AddMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (*model.TeamHasMember, error)
+	AddMemberByEmail(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMemberByEmail) (*model.TeamHasMember, error)
 	RemoveMember(ctx context.Context, obj *model.TeamOps, input model.NewTeamHasMember) (string, error)
 	Delete(ctx context.Context, obj *model.TeamOps, id int) (string, error)
 }
@@ -719,6 +721,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TeamOps.AddMember(childComplexity, args["input"].(model.NewTeamHasMember)), true
 
+	case "TeamOps.add_member_by_email":
+		if e.complexity.TeamOps.AddMemberByEmail == nil {
+			break
+		}
+
+		args, err := ec.field_TeamOps_add_member_by_email_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.TeamOps.AddMemberByEmail(childComplexity, args["input"].(model.NewTeamHasMemberByEmail)), true
+
 	case "TeamOps.create":
 		if e.complexity.TeamOps.Create == nil {
 			break
@@ -1037,6 +1051,7 @@ type TeamOps {
     create(name: String!): Team! @goField(forceResolver: true) @isLogin
     update_name(id: ID!, name: String!): Team! @goField(forceResolver: true) @isLogin
     add_member(input: NewTeamHasMember!): TeamHasMember! @goField(forceResolver: true) @isLogin
+    add_member_by_email(input: NewTeamHasMemberByEmail!): TeamHasMember! @goField(forceResolver: true) @isLogin
     remove_member(input: NewTeamHasMember!): String! @goField(forceResolver: true) @isLogin
     delete(id: ID!): String! @goField(forceResolver: true) @isLogin
 }`, BuiltIn: false},
@@ -1050,7 +1065,11 @@ input NewTeamHasMember {
     team_id: ID!
     user_id: ID!
 }
-`, BuiltIn: false},
+
+input NewTeamHasMemberByEmail {
+    team_id: ID!
+    email: String!
+}`, BuiltIn: false},
 	{Name: "graph/user.graphql", Input: `type User {
     id: ID!
     name: String!
@@ -1363,6 +1382,21 @@ func (ec *executionContext) field_TeamOps_add_member_args(ctx context.Context, r
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNNewTeamHasMember2myappᚋgraphᚋmodelᚐNewTeamHasMember(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_TeamOps_add_member_by_email_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewTeamHasMemberByEmail
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNNewTeamHasMemberByEmail2myappᚋgraphᚋmodelᚐNewTeamHasMemberByEmail(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4003,6 +4037,68 @@ func (ec *executionContext) _TeamOps_add_member(ctx context.Context, field graph
 	return ec.marshalNTeamHasMember2ᚖmyappᚋgraphᚋmodelᚐTeamHasMember(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _TeamOps_add_member_by_email(ctx context.Context, field graphql.CollectedField, obj *model.TeamOps) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TeamOps",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_TeamOps_add_member_by_email_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.TeamOps().AddMemberByEmail(rctx, obj, args["input"].(model.NewTeamHasMemberByEmail))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLogin == nil {
+				return nil, errors.New("directive isLogin is not implemented")
+			}
+			return ec.directives.IsLogin(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.TeamHasMember); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *myapp/graph/model.TeamHasMember`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TeamHasMember)
+	fc.Result = res
+	return ec.marshalNTeamHasMember2ᚖmyappᚋgraphᚋmodelᚐTeamHasMember(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _TeamOps_remove_member(ctx context.Context, field graphql.CollectedField, obj *model.TeamOps) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5820,6 +5916,34 @@ func (ec *executionContext) unmarshalInputNewTeamHasMember(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewTeamHasMemberByEmail(ctx context.Context, obj interface{}) (model.NewTeamHasMemberByEmail, error) {
+	var it model.NewTeamHasMemberByEmail
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "team_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("team_id"))
+			it.TeamID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "email":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj interface{}) (model.NewUser, error) {
 	var it model.NewUser
 	var asMap = obj.(map[string]interface{})
@@ -6629,6 +6753,20 @@ func (ec *executionContext) _TeamOps(ctx context.Context, sel ast.SelectionSet, 
 				}
 				return res
 			})
+		case "add_member_by_email":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TeamOps_add_member_by_email(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "remove_member":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -7314,6 +7452,11 @@ func (ec *executionContext) unmarshalNNewListItem2myappᚋgraphᚋmodelᚐNewLis
 
 func (ec *executionContext) unmarshalNNewTeamHasMember2myappᚋgraphᚋmodelᚐNewTeamHasMember(ctx context.Context, v interface{}) (model.NewTeamHasMember, error) {
 	res, err := ec.unmarshalInputNewTeamHasMember(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNewTeamHasMemberByEmail2myappᚋgraphᚋmodelᚐNewTeamHasMemberByEmail(ctx context.Context, v interface{}) (model.NewTeamHasMemberByEmail, error) {
+	res, err := ec.unmarshalInputNewTeamHasMemberByEmail(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

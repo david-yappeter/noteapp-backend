@@ -8,3 +8,8 @@ input NewTeamHasMember {
     team_id: ID!
     user_id: ID!
 }
+
+input NewTeamHasMemberByEmail {
+    team_id: ID!
+    email: String!
+}
