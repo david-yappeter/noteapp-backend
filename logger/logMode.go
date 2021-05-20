@@ -24,7 +24,7 @@ func InitConfig() *gorm.Config {
 func InitLog() logger.Interface {
 	newLogger := logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
 		Colorful:      true,
-		LogLevel:      logger.Info,
+		LogLevel:      logger.Error,
 		SlowThreshold: time.Second,
 	})
 	return newLogger
