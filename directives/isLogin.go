@@ -10,7 +10,6 @@ import (
 
 func IsLogin(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
 	tokenUser := service.ForContext(ctx)
-
 	if tokenUser == nil {
 		return nil, &gqlerror.Error{
 			Message: "access denied (Not Logged In)",
@@ -19,6 +18,5 @@ func IsLogin(ctx context.Context, obj interface{}, next graphql.Resolver) (inter
 			},
 		}
 	}
-
 	return next(ctx)
 }

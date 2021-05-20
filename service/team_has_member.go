@@ -109,7 +109,30 @@ func TeamRemoveMember(ctx context.Context, input model.NewTeamHasMember) (string
 		return "Failed", gqlError("Access Denied! (Not Member Of Team)", "code", "ACCESS_DENIED")
 	}
 
+	if ownerConstraint, err := TeamRemoveMemberConstraintRemoveOwner(ctx, input); err != nil || !ownerConstraint {
+		if err != nil {
+			fmt.Println(err)
+			return "Failed", err
+		}
+
+		return "Failed", gqlError("Not Allowed To Remove Owner!", "code", "ACTION_NOT_ALLOWED")
+	}
+
 	return TeamHasMemberDelete(ctx, input)
+}
+
+func TeamRemoveMemberConstraintRemoveOwner(ctx context.Context, input model.NewTeamHasMember) (bool, error) {
+	getTeam, err := TeamGetByID(ctx, input.TeamID)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	if getTeam.OwnerID == input.UserID && ForContext(ctx).ID != getTeam.OwnerID {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 //TeamHasMemberDelete Delete
