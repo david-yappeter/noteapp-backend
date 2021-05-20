@@ -92,7 +92,7 @@ func TeamHasMemberGetByTeamIDAndEmail(ctx context.Context, teamID int, email str
 	defer sqlDB.Close()
 
 	var teamHasMember model.TeamHasMember
-	if err := db.Table("team_has_member").Select("team_has_member.*").Joins(`INNER JOIN "user" on "user".id = team_has_member.user_id`).Where(`"user".email = ?`, strings.ToLower(email)).Take(&teamHasMember).Error; err != nil {
+	if err := db.Table("team_has_member").Select("team_has_member.*").Joins(`INNER JOIN "user" on "user".id = team_has_member.user_id`).Where(`"user".email = ? AND team_has_member.team_id = ?`, strings.ToLower(email), teamID).Take(&teamHasMember).Error; err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
