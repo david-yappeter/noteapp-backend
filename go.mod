@@ -8,6 +8,7 @@ require (
 	github.com/badoux/checkmail v1.2.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-chi/chi v3.3.2+incompatible
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.1.0

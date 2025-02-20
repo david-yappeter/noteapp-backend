@@ -16,7 +16,7 @@
 
 .vscode/
 
-.env*
+.env
 *.log
 
 credentials.json
